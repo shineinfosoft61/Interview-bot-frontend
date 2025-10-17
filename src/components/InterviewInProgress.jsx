@@ -14,12 +14,25 @@ const InterviewInProgress = ({
   startRecording,
   stopRecording,
   handleNextQuestion,
-  formatTime
+  formatTime,
+  isUserSpeaking
 }) => {
+
+  // console.log("@@@@@@@@@@@@@@@@@@@isRecording", isRecording);
+  // console.log("@@@@@@@@@@@@@@@@@@@isListening", isListening);
+  // console.log("@@@@@@@@@@@@@@@@@@@micEnabled", micEnabled);
     
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
       <div className="max-w-4xl mx-auto">
+        {/* Inline keyframes for mouth animation */}
+        <style>{`
+          @keyframes mouthTalk {
+            0% { transform: translateX(-50%) scaleX(0.8) scaleY(0.25); height: 2px; }
+            50% { transform: translateX(-50%) scaleX(1.15) scaleY(1); height: 8px; }
+            100% { transform: translateX(-50%) scaleX(0.8) scaleY(0.25); height: 2px; }
+          }
+        `}</style>
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex justify-between items-center">
@@ -79,11 +92,35 @@ const InterviewInProgress = ({
               )}
             </button>
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600">
-                {isSpeaking ? 'Speaking question...' : 
-                 isRecording ? 'Recording...' : 
-                 !micEnabled ? 'Please wait...' : 'Click to start recording'}
-              </p>
+              <div className="flex items-center justify-center gap-2">
+                <p className="text-sm font-medium text-gray-600">
+                  {isSpeaking ? 'Speaking question...' : 
+                   isRecording ? 'Recording...' : 
+                   !micEnabled ? 'Please wait...' : 'Click to start recording'}
+                </p>
+                <div
+                  className={`ml-2 px-2 py-1 rounded-full text-xs flex items-center gap-2 border bg-gray-50 text-gray-600 border-gray-200`}
+                  title={isUserSpeaking ? 'Speaking now' : 'Silent'}
+                  aria-label={isUserSpeaking ? 'Speaking now' : 'Silent'}
+                >
+                  {/* Emoji with mouth overlay that animates while speaking */}
+                  <span className="relative inline-flex items-center justify-center w-8 h-8">
+                    <span className="text-2xl leading-none" role="img" aria-hidden="true">😶</span>
+                    <span
+                      className="absolute bottom-[1px] left-1/2 w-4 bg-gray-700 rounded-sm"
+                      style={
+                        isUserSpeaking
+                          ? { animation: 'mouthTalk 0.35s infinite ease-in-out', transformOrigin: 'center', zIndex: 10 }
+                          : { transform: 'translateX(-50%) scaleY(0.3)', height: '2px', zIndex: 10 }
+                      }
+                      aria-hidden="true"
+                    />
+                  </span>
+                  <span className="font-medium">
+                    {isUserSpeaking ? 'Speaking…' : 'Silent'}
+                  </span>
+                </div>
+              </div>
               {isListening && (
                 <p className="text-xs text-blue-600 mt-1">Listening for your response...</p>
               )}

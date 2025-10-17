@@ -34,9 +34,7 @@ const UserOnboarding = ({ onComplete }) => {
   }, [showCamera, stream]);
 
   const technologies = [
-    'JavaScript', 'Python', 'java', 'C++', 'C#', 'PHP', 'Ruby', 'Go', 
-    'Swift', 'Kotlin', 'React', 'Angular', 'Vue.js', 'Node.js', 'Django', 
-    'Spring Boot', 'Laravel', 'Express.js', 'Flutter', 'React Native'
+    '.NET', 'Python', 'React', 'Java'
   ];
 
   const experienceLevels = [

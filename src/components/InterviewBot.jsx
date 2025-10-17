@@ -8,9 +8,13 @@ import InterviewStart from './InterviewStart';
 import InterviewComplete from './InterviewComplete';
 import InterviewInProgress from './InterviewInProgress';
 import { saveAnswer } from '../reduxServices/actions/InterviewAction';
+import { useParams } from 'react-router-dom';
+import { getHrDocument, updateHRDocument } from '../reduxServices/actions/InterviewAction';
+
 
 const InterviewBot = () => {
   const dispatch = useDispatch();
+  const { id } = useParams();
   const { questions } = useSelector(state => state.InterviewReducer);
   
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
@@ -37,7 +41,8 @@ const InterviewBot = () => {
     setMicEnabled,
     startRecording,
     stopRecording,
-    resetTranscript
+    resetTranscript,
+    isUserSpeaking
   } = useSpeechRecognition();
   
   const {
@@ -180,6 +185,7 @@ const InterviewBot = () => {
     
     // Save current answer
     const newAnswer = {
+      hr : id,
       question: currentQuestion.id,
       candidate: userData.id,
       answer_text: currentAnswer,
@@ -207,6 +213,19 @@ const InterviewBot = () => {
       stopRecording();
       setMicEnabled(false);
       stopTimer();
+
+        const payload = {
+          interview_status: "Completed",
+          interview_closed: true,
+        };
+        const res = await dispatch(updateHRDocument(id, payload));
+        if (res?.success) {
+          toast.success('Interview updated successfully');
+          dispatch(getHrDocument());
+        } else {
+          toast.error(res?.error || 'Failed to update interview');
+        }
+            
     }
   };
 
@@ -300,6 +319,7 @@ const InterviewBot = () => {
       stopRecording={stopRecording}
       handleNextQuestion={handleNextQuestion}
       formatTime={formatTime}
+      isUserSpeaking={isUserSpeaking}
     />
   );
 };

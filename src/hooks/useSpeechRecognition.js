@@ -6,10 +6,14 @@ export const useSpeechRecognition = () => {
   const [currentAnswer, setCurrentAnswer] = useState('');
   const [finalTranscript, setFinalTranscript] = useState('');
   const [micEnabled, setMicEnabled] = useState(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
 
   
   const recognitionRef = useRef(null);
   const finalTranscriptRef = useRef('');
+  const speakingTimeoutRef = useRef(null);
+  console.log("isUserSpeaking@@@@@@@@@@@@@", isUserSpeaking);
+
 
   // Initialize speech recognition
   useEffect(() => {
@@ -33,6 +37,12 @@ export const useSpeechRecognition = () => {
 
       recognitionRef.current.onresult = (event) => {
         let interimTranscript = '';
+
+        setIsUserSpeaking(true);
+        clearTimeout(speakingTimeoutRef.current);
+        speakingTimeoutRef.current = setTimeout(() => {
+          setIsUserSpeaking(false);
+        }, 800); // after 1.2s of silence -> silent
         
         // Process only new results from resultIndex
         for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -140,6 +150,7 @@ export const useSpeechRecognition = () => {
   const startRecording = () => {
     if (recognitionRef.current && micEnabled) {
       setIsRecording(true);
+      console.log("IsListening", isListening);
 
       
       try {
@@ -189,6 +200,7 @@ export const useSpeechRecognition = () => {
     setMicEnabled,
     startRecording,
     stopRecording,
-    resetTranscript
+    resetTranscript,
+    isUserSpeaking
   };
 };
