@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Mic, MicOff, SkipForward, Clock } from 'lucide-react';
 
 const InterviewInProgress = ({
@@ -15,15 +15,103 @@ const InterviewInProgress = ({
   stopRecording,
   handleNextQuestion,
   formatTime,
-  isUserSpeaking
+  isUserSpeaking,
+  tabSwitchesRef,
+  lastSwitchAtRef
 }) => {
 
-  // console.log("@@@@@@@@@@@@@@@@@@@isRecording", isRecording);
-  // console.log("@@@@@@@@@@@@@@@@@@@isListening", isListening);
-  // console.log("@@@@@@@@@@@@@@@@@@@micEnabled", micEnabled);
+  const videoRef = useRef(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [leftTurns, setLeftTurns] = useState(0);
+  const [rightTurns, setRightTurns] = useState(0);
+  const [lastYaw, setLastYaw] = useState(0);
+  const yawThreshold = 15; // degrees — how much rotation counts as a "turn"
+  const [model, setModel] = useState(null);
+  
+
+  useEffect(() => {
+    startCamera();
+    return () => stopCamera(); // stop when component unmounts
+  }, []);
+
+  useEffect(() => {
+    const maybeCountSwitch = () => {
+      const now = Date.now();
+      // De-duplicate quick successive events (blur + visibilitychange + pagehide)
+      if (now - lastSwitchAtRef.current < 300) return;
+      lastSwitchAtRef.current = now;
+      tabSwitchesRef.current += 1;
+      console.log(`⚠️ ${tabSwitchesRef.current} tab switch${tabSwitchesRef.current > 1 ? 'es' : ''} detected`);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        maybeCountSwitch();
+      }
+    };
+
+    const onBlur = () => {
+      maybeCountSwitch();
+    };
+
+    const onPageHide = () => {
+      maybeCountSwitch();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('pagehide', onPageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, []);
+  
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      videoRef.current.srcObject = stream;
+      setCameraActive(true);
+    } catch (err) {
+      console.error("Camera access denied:", err);
+      alert("Please allow camera access to continue the interview.");
+    }
+  };
+
+  const stopCamera = () => {
+    const stream = videoRef.current?.srcObject;
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setCameraActive(false);
+  };
+
+
     
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
+      <div className="flex flex-col items-center justify-center">
+      <h2 className="text-xl font-bold mb-4">Interview in Progress</h2>
+
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        width="320"
+        height="240"
+        className="rounded-lg border"
+      />
+
+      {cameraActive ? (
+        <p className="text-green-600 mt-2">Camera Active 🎥</p>
+      ) : (
+        <p className="text-red-600 mt-2">Camera Off</p>
+      )}
+    </div>
       <div className="max-w-4xl mx-auto">
         {/* Inline keyframes for mouth animation */}
         <style>{`

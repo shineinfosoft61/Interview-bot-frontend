@@ -1,4 +1,6 @@
 import React from 'react';
+import { API_URL } from '../reduxServices/api/InterviewApi';
+
 import {
   X,
   FileText,
@@ -14,6 +16,7 @@ import {
 
 const AnswerReportModal = ({ interview, onClose }) => {
   if (!interview) return null;
+  console.log(interview?.tab_count,'=========================')
 
   const answers = Array.isArray(interview.answers) ? interview.answers : [];
   const firstAnsAt = answers[0]?.created_at ? new Date(answers[0]?.created_at) : null;
@@ -62,12 +65,12 @@ const AnswerReportModal = ({ interview, onClose }) => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {interview?.cvUrl && (
+              {interview?.upload_doc && (
                 <a
-                  href={interview.cvUrl}
+                  href={`${API_URL}${interview.upload_doc}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="hidden sm:inline-flex px-3 py-1.5 rounded-md bg-white/15 text-white text-sm hover:bg-white/25 border border-white/20"
+                  className="sm:inline-flex px-3 py-1.5 rounded-md bg-white/15 text-white text-sm hover:bg-white/25 border border-white/20"
                 >
                   View CV ↗
                 </a>
@@ -77,7 +80,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
                   href={interview.snapshotsUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="hidden sm:inline-flex px-3 py-1.5 rounded-md bg-white/15 text-white text-sm hover:bg-white/25 border border-white/20"
+                  className="sm:inline-flex px-3 py-1.5 rounded-md bg-white/15 text-white text-sm hover:bg-white/25 border border-white/20"
                 >
                   View Snapshots ↗
                 </a>
@@ -95,7 +98,22 @@ const AnswerReportModal = ({ interview, onClose }) => {
           <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-semibold">
-                {(interview?.name || '?').slice(0, 1).toUpperCase()}
+               {interview.photo ? (
+                <img
+                  src={`${API_URL}${interview.photo}`}
+                  alt={interview.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-semibold">
+                  {(interview.name || '?')
+                    .split(' ')
+                    .map(n => n[0])
+                    .slice(0,2)
+                    .join('')
+                    .toUpperCase()}
+                </div>
+                )}
               </div>
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900">{interview?.name || 'Candidate'}</h2>
@@ -145,7 +163,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
               <Briefcase className="w-5 h-5 text-gray-500" />
               <div>
                 <div className="text-xs text-gray-500">Current role</div>
-                <div className="text-sm font-medium text-gray-800">{interview?.role || '—'}</div>
+                <div className="text-sm font-medium text-gray-800">{interview?.technology || '—'}</div>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -193,28 +211,51 @@ const AnswerReportModal = ({ interview, onClose }) => {
           )}
 
           {/* Proctoring */}
-          {proctor && (
-            <section>
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Proctoring</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-center">
-                  <Monitor className="w-6 h-6 mx-auto text-emerald-600" />
-                  <div className="mt-2 text-xs font-medium text-emerald-700">{proctor?.distractions === 0 ? 'No Distractions' : 'Distractions'}</div>
-                  <div className="text-xs text-gray-600 mt-1">{typeof proctor?.distractions === 'number' ? `You stayed focused with ${proctor.distractions} tab switches.` : 'Focus data not available.'}</div>
+          <section>
+            <h4 className="text-sm font-semibold text-gray-900 mb-3">Proctoring</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* No Distractions */}
+              <div className="rounded-xl border border-green-400 p-4 text-center">
+                <div className="w-14 h-14 mx-auto rounded-lg bg-gray-50 flex items-center justify-center">
+                  <Monitor className="w-7 h-7 text-gray-500" />
                 </div>
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-center">
-                  <UserRound className="w-6 h-6 mx-auto text-emerald-600" />
-                  <div className="mt-2 text-xs font-medium text-emerald-700">Single Person Detected</div>
-                  <div className="text-xs text-gray-600 mt-1">{typeof proctor?.peopleCount === 'number' ? `Detected ${proctor.peopleCount} face(s) during session.` : 'Face detection not available.'}</div>
+                <div className="mt-3">
+                  <span className="inline-block px-3 py-1 rounded-full bg-green-600 text-white text-xs font-semibold">{interview?.tab_count > 0 ? 'Distractions' : 'No Distractions'}</span>
                 </div>
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-center">
-                  <Smile className="w-6 h-6 mx-auto text-emerald-600" />
-                  <div className="mt-2 text-xs font-medium text-emerald-700">{proctor?.expression || 'Good'}</div>
-                  <div className="text-xs text-gray-600 mt-1">Facial expressions showed focus and interest.</div>
+                <div className="text-xs text-gray-600 mt-2">
+                  {interview?.tab_count
+                    ? `You ${interview.tab_count === 0 ? 'stayed fully focused with 0 tab switches.' : `had ${interview.tab_count} tab switch${interview.tab_count > 1 ? 'es' : ''}.`}`
+                    : 'You stayed fully focused with 0 tab switches.'}
                 </div>
               </div>
-            </section>
-          )}
+
+              {/* Single Person Detected */}
+              <div className="rounded-xl border border-green-400 p-4 text-center">
+                <div className="w-14 h-14 mx-auto rounded-lg bg-gray-50 flex items-center justify-center">
+                  <UserRound className="w-7 h-7 text-gray-500" />
+                </div>
+                <div className="mt-3">
+                  <span className="inline-block px-3 py-1 rounded-full bg-green-600 text-white text-xs font-semibold">{proctor?.peopleCount === 1 ? 'Single Person Detected' : 'People Detected'}</span>
+                </div>
+                <div className="text-xs text-gray-600 mt-2">
+                  {typeof proctor?.peopleCount === 'number'
+                    ? `Detected ${proctor.peopleCount} face(s) throughout the session.`
+                    : 'Face detection not available.'}
+                </div>
+              </div>
+
+              {/* Expression */}
+              <div className="rounded-xl border border-green-400 p-4 text-center">
+                <div className="w-14 h-14 mx-auto rounded-lg bg-gray-50 flex items-center justify-center">
+                  <Smile className="w-7 h-7 text-gray-500" />
+                </div>
+                <div className="mt-3">
+                  <span className="inline-block px-3 py-1 rounded-full bg-green-600 text-white text-xs font-semibold">{proctor?.expression || 'Good'}</span>
+                </div>
+                <div className="text-xs text-gray-600 mt-2">Facial expressions showed strong focus and interest.</div>
+              </div>
+            </div>
+          </section>
 
           {/* Answers */}
           <section>

@@ -3,6 +3,7 @@ import { Calendar, Mail, Phone, Briefcase, Clock, ArrowLeft, AlertCircle, Filter
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { getHrDocument, updateHRDocument } from '../reduxServices/actions/InterviewAction';
+import { API_URL } from '../reduxServices/api/InterviewApi';
 import { toast } from 'react-toastify';
 import HrDocPopup from '../Modal/HrDocPopup';
 import AnswerReportModal from '../Modal/AnswerReportModal';
@@ -104,13 +105,29 @@ const SheduleList = () => {
                     className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow group"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-gray-800 text-lg">
-                          {interview.name}
-                        </h3>
-                        <p className="text-sm text-purple-600 font-medium">
-                          {interview.position}
-                        </p>
+                      <div className="flex items-center gap-3">
+                        {/* Avatar */}
+                        {interview.photo ? (
+                          <img
+                            src={`${API_URL}${interview.photo}`}
+                            alt={interview.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-semibold">
+                            {(interview.name || '?')
+                              .split(' ')
+                              .map(n => n[0])
+                              .slice(0,2)
+                              .join('')
+                              .toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="font-semibold text-gray-800 text-lg">
+                            {interview.name}
+                          </h3>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <span

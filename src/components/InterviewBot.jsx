@@ -27,7 +27,9 @@ const InterviewBot = () => {
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(true);
-  
+  const tabSwitchesRef = useRef(0);
+  const lastSwitchAtRef = useRef(0);
+
   const totalQuestions = 10;
   
   const speechSynthesisRef = useRef(null);
@@ -217,6 +219,7 @@ const InterviewBot = () => {
         const payload = {
           interview_status: "Completed",
           interview_closed: true,
+          tab_count: tabSwitchesRef.current,
         };
         const res = await dispatch(updateHRDocument(id, payload));
         if (res?.success) {
@@ -320,6 +323,8 @@ const InterviewBot = () => {
       handleNextQuestion={handleNextQuestion}
       formatTime={formatTime}
       isUserSpeaking={isUserSpeaking}
+      tabSwitchesRef={tabSwitchesRef}
+      lastSwitchAtRef={lastSwitchAtRef}
     />
   );
 };

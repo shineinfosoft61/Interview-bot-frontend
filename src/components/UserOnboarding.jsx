@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 import { Camera, User, Code, Award, ArrowRight } from 'lucide-react';
-import { addCandidate } from '../reduxServices/actions/InterviewAction';
+import { updateHRDocument, getHrDocumentById } from '../reduxServices/actions/InterviewAction';
 
 const UserOnboarding = ({ onComplete }) => {
   const dispatch = useDispatch();
+  const { id } = useParams();
   const [formData, setFormData] = useState({
     name: '',
     technology: '',
@@ -21,6 +23,26 @@ const UserOnboarding = ({ onComplete }) => {
   const [stream, setStream] = useState(null);
   const [isValidatingFace, setIsValidatingFace] = useState(false);
 
+  const hrDocument = useSelector((state) => state.InterviewReducer.hrDocumentById) || {};
+
+  // Fetch latest HR document details when onboarding mounts (to prefill or validate access)
+  useEffect(() => {
+    if (id) {
+      dispatch(getHrDocumentById(id));
+    }
+  }, [dispatch, id]);
+
+  // Prefill local form state from fetched HR document
+  useEffect(() => {
+    if (!hrDocument) return;
+    setFormData(prev => ({
+      ...prev,
+      name: hrDocument.name ?? prev.name,
+      technology: hrDocument.technology ?? prev.technology,
+      experience: hrDocument.experience ?? prev.experience,
+    }));
+  }, [hrDocument]);
+
   // Effect to handle video stream assignment
   useEffect(() => {
     if (showCamera && stream && videoRef.current) {
@@ -34,7 +56,7 @@ const UserOnboarding = ({ onComplete }) => {
   }, [showCamera, stream]);
 
   const technologies = [
-    '.NET', 'Python', 'React', 'Java'
+    '.NET', 'python', 'React', 'Java'
   ];
 
   const experienceLevels = [
@@ -208,6 +230,11 @@ const UserOnboarding = ({ onComplete }) => {
       setIsSubmitting(true);
       
       try {
+        if (!id) {
+          setErrors({ submit: 'Missing interview id in URL. Please use a valid interview link.' });
+          setIsSubmitting(false);
+          return;
+        }
         // Create FormData for multipart form submission
         const formDataToSend = new FormData();
         formDataToSend.append('name', formData.name);
@@ -222,8 +249,8 @@ const UserOnboarding = ({ onComplete }) => {
         // Add timestamp
         formDataToSend.append('timestamp', new Date().toISOString());
         
-        // Dispatch Redux action to save to backend
-        const result = await dispatch(addCandidate(formDataToSend));
+        // Update existing HR document with candidate onboarding details
+        const result = await dispatch(updateHRDocument(id, formDataToSend));
         
         if (result.success) {
           // Save user data to localStorage for local use
@@ -231,7 +258,7 @@ const UserOnboarding = ({ onComplete }) => {
             ...formData,
             photoPreview: formData.photoPreview,
             timestamp: new Date().toISOString(),
-            id: result.data.id // Include backend ID if returned
+            hrId: id
           };
           localStorage.setItem('interviewUserData', JSON.stringify(userData));
           onComplete(userData);
@@ -277,47 +304,41 @@ const UserOnboarding = ({ onComplete }) => {
             {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
           </div>
 
-          {/* Technology Field */}
+          {/* Technology Field (text input) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Code className="inline w-4 h-4 mr-1" />
               Primary Technology *
             </label>
-            <select
+            <input
+              type="text"
               name="technology"
               value={formData.technology}
               onChange={handleInputChange}
               className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
                 errors.technology ? 'border-red-500' : 'border-gray-300'
               }`}
-            >
-              <option value="">Select your primary technology</option>
-              {technologies.map(tech => (
-                <option key={tech} value={tech}>{tech}</option>
-              ))}
-            </select>
+              placeholder="Enter your primary technology"
+            />
             {errors.technology && <p className="text-red-500 text-sm mt-1">{errors.technology}</p>}
           </div>
 
-          {/* Experience Field */}
+          {/* Experience Field (text input) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Award className="inline w-4 h-4 mr-1" />
               Experience Level *
             </label>
-            <select
+            <input
+              type="text"
               name="experience"
               value={formData.experience}
               onChange={handleInputChange}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus-border-transparent ${
                 errors.experience ? 'border-red-500' : 'border-gray-300'
               }`}
-            >
-              <option value="">Select your experience level</option>
-              {experienceLevels.map(level => (
-                <option key={level} value={level}>{level}</option>
-              ))}
-            </select>
+              placeholder="e.g., 3 years or Mid-level (3-5 years)"
+            />
             {errors.experience && <p className="text-red-500 text-sm mt-1">{errors.experience}</p>}
           </div>
 

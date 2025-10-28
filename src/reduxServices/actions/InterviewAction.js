@@ -16,6 +16,10 @@ function HrDocumentDetail(data) {
   return { type: InterviewConstant.ALL_HR_DOCUMENT_DATA, data };
 }
 
+function HrDocumentDetailById(data) {
+  return { type: InterviewConstant.ALL_HR_DOCUMENT_DATA_BY_ID, data };
+}
+
 function CandidateAccess(data) {
   return { type: InterviewConstant.ALL_CANDIDATE_ACCESS, data };
 }
@@ -58,16 +62,15 @@ export const getCandidateAccess = (candidateId) => {
 export const updateHRDocument = (id, data) => {
   return async (dispatch) => {
     try {
-      const response = await axios.put(`${HR_API}${id}/`, data, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+      const headers = isFormData
+        ? { "Content-Type": "multipart/form-data" }
+        : { "Content-Type": "application/json" };
+
+      const response = await axios.put(`${HR_API}${id}/`, data, { headers });
 
       if (response.data) {
         console.log("HR Document updated successfully", response.data);
-        // Optionally refresh list after update
-        // dispatch(getHrDocument());
         return { success: true, data: response.data };
       } else {
         return { success: false, error: "No data in response" };
@@ -94,6 +97,24 @@ export const getHrDocument = () => {
     }
   };
 };
+
+
+export const getHrDocumentById = (id) => {
+  return async (dispatch) => {
+    try {
+      const res = await axios.get(`${HR_API}${id}/`, {
+        // headers: {
+        //   "Content-Type": "application/json",
+        //   Authorization: "Bearer " + localStorage.getItem("workload-token"),
+        // },
+      });
+      dispatch(HrDocumentDetailById(res.data));
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  };
+};
+
 
 
 
@@ -204,6 +225,6 @@ export const PdfDataAction = {
   saveAnswer,
   saveHRDocument,
   getHrDocument,
-  updateHRDocument
-  // allUserDetail,
+  updateHRDocument,
+  getHrDocumentById,
 };

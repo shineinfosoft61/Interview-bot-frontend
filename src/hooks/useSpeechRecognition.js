@@ -12,7 +12,6 @@ export const useSpeechRecognition = () => {
   const recognitionRef = useRef(null);
   const finalTranscriptRef = useRef('');
   const speakingTimeoutRef = useRef(null);
-  console.log("isUserSpeaking@@@@@@@@@@@@@", isUserSpeaking);
 
 
   // Initialize speech recognition
