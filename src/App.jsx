@@ -7,9 +7,13 @@ import NavbarComponent from "./components/Navbar";
 import InterviewBot from "./components/InterviewBot";
 import HRControl from "./components/HRControl";
 import SheduleList from "./components/SheduleList";
+import Requirements from "./components/Requirements";
+import JobDescriptions from "./pages/JobDescriptions";
+import CandidateList from "./pages/CandidateList";
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import "./css/style.css";
+import Resume from './components/Resume';
 // import { authActionDataAction } from "./reduxServices/actions/Authaction";
 // import AddProject from "./pages/project/AddProject";
 import 'react-toastify/dist/ReactToastify.css';
@@ -59,6 +63,10 @@ function App() {
         <Route path="/:id" element={<InterviewBotWrapper />} />
         <Route path="/hr-control" element={<HRControl />} />
         <Route path="/scheduled-interviews" element={<SheduleList />} />
+        <Route path="/job-descriptions" element={<JobDescriptions />} />
+        <Route path="/candidates" element={<CandidateList />} />
+        <Route path="/requirements" element={<Requirements />} />
+        <Route path="/resume" element={<Resume />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
       </Routes>

@@ -6,6 +6,8 @@ const initailState = {
     hrDocument: [],
     candidateAccess: [],
     hrDocumentById: [],
+    photo: [],
+    requirement: [],
 };
 
 
@@ -27,6 +29,12 @@ export default function InterviewReducer(state = initailState, action) {
 
       case InterviewConstant.ALL_HR_DOCUMENT_DATA_BY_ID:
         return { ...state, hrDocumentById: action.data };
+
+      case InterviewConstant.ALL_PHOTO_DATA:
+        return { ...state, photo: action.data };
+      
+      case InterviewConstant.ALL_REQUIREMENT_DATA:
+        return { ...state, requirement: action.data };
 
       default:
         return state;

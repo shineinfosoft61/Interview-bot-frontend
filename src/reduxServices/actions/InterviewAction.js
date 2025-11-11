@@ -1,5 +1,5 @@
 import axios from "axios";
-import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API } from "../api/InterviewApi";
+import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API,PHOTO_API } from "../api/InterviewApi";
 import { InterviewConstant } from "../constant/InterviewConstant";
 
 
@@ -24,7 +24,13 @@ function CandidateAccess(data) {
   return { type: InterviewConstant.ALL_CANDIDATE_ACCESS, data };
 }
 
+function PhotoDetail(data) {
+  return { type: InterviewConstant.ALL_PHOTO_DATA, data };
+}
 
+function RequirementDetail(data) {
+  return { type: InterviewConstant.ALL_REQUIREMENT_DATA, data };
+}
 
 export const getQuestion = () => {
   return async (dispatch) => {
@@ -58,6 +64,22 @@ export const getCandidateAccess = (candidateId) => {
   };
 };
 
+
+export const getPhoto = (candidateId) => {
+  return async (dispatch) => {
+    try {
+      // Build API URL dynamically
+      const url = `${PHOTO_API}${candidateId}/`;
+      const res = await axios.get(url, {
+      });
+
+      dispatch(PhotoDetail(res.data));
+    } catch (error) {
+      console.error("Error fetching candidate access:", error);
+    }
+  };
+};
+
 // Update existing HR document
 export const updateHRDocument = (id, data) => {
   return async (dispatch) => {
@@ -82,6 +104,31 @@ export const updateHRDocument = (id, data) => {
   };
 };
 
+
+export const updateRequirement = (id, data) => {
+  return async (dispatch) => {
+    try {
+      const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+      const headers = isFormData
+        ? { "Content-Type": "multipart/form-data" }
+        : { "Content-Type": "application/json" };
+
+      const response = await axios.put(`${REQUIREMENT_API}${id}/`, data, { headers });
+
+      if (response.data) {
+        console.log("Requirement updated successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error updating Requirement:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
+
 export const getHrDocument = () => {
   return async (dispatch) => {
     try {
@@ -92,6 +139,23 @@ export const getHrDocument = () => {
         // },
       });
       dispatch(HrDocumentDetail(res.data));
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    }
+  };
+};
+
+export const getRequirement = () => {
+  return async (dispatch) => {
+    try {
+      const res = await axios.get(REQUIREMENT_API, {
+        // headers: {
+        //   "Content-Type": "application/json",
+        //   Authorization: "Bearer " + localStorage.getItem("workload-token"),
+        // },
+      });
+      console.log('requirement', res.data);
+      dispatch(RequirementDetail(res.data));
     } catch (error) {
       console.error("Error fetching projects:", error);
     }
@@ -177,14 +241,84 @@ export const saveHRDocument = (data) => {
       });
 
       if (response.data) {
-        console.log("Answer added successfully", response.data);
+        console.log("HR document added successfully", response.data);
         return { success: true, data: response.data };
       } else {
         console.log("No data in the response");
         return { success: false, error: "No data in response" };
       }
     } catch (error) {
-      console.error("Error adding answer:", error);
+      console.error("Error adding HR document:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
+export const saveQuestion = (data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(INTERVIEW_API, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data) {
+        console.log("Question added successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error adding question:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
+export const saveRequirement = (formData) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(REQUIREMENT_API, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data) {
+        console.log("Requirement added successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error adding requirement:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
+
+export const savePhoto = (id,data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(`${PHOTO_API}${id}/`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data) {
+        console.log("Photo added successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error adding photo:", error);
       return { success: false, error: error.message };
     }
   };
@@ -227,4 +361,9 @@ export const PdfDataAction = {
   getHrDocument,
   updateHRDocument,
   getHrDocumentById,
+  savePhoto,
+  saveRequirement,
+  getRequirement,
+  updateRequirement,
+  saveQuestion,
 };

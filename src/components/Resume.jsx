@@ -4,12 +4,13 @@ import { Calendar, Upload, X, FileText, User, Mail, Phone, Briefcase, Clock, Che
 import { saveHRDocument } from '../reduxServices/actions/InterviewAction';
 import { useNavigate } from 'react-router-dom';
 
-const HRControl = () => {
+const Resume = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { hrDocument } = useSelector(state => state.InterviewReducer);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -72,6 +73,7 @@ const HRControl = () => {
 
     try {
       const result = await dispatch(saveHRDocument(formData));
+      console.log('-------------',result)
       
       if (result.success) {
         setSelectedFiles([]);
@@ -81,10 +83,12 @@ const HRControl = () => {
           navigate('/scheduled-interviews');
         }, 2000);
       } else {
-        alert('Failed to upload documents: ' + (result.error || 'Unknown error'));
+        setErrorMessage(result.error || 'Failed to upload documents. Please try again.');
+        setTimeout(() => setErrorMessage(''), 5000);
       }
     } catch (error) {
-      alert('Error uploading documents: ' + error.message);
+      setErrorMessage('Error uploading documents: ' + error.message);
+      setTimeout(() => setErrorMessage(''), 5000);
     } finally {
       setIsUploading(false);
     }
@@ -101,37 +105,49 @@ const HRControl = () => {
 
   return (
     <div className="min-h-screen ml-14 bg-gradient-to-br from-purple-50 to-blue-50 p-6">
-      <div className="max-w-5xl mx-auto mt-16">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <Briefcase className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">HR Control Panel</h1>
-              <p className="text-gray-600">Schedule interviews and manage candidate resumes</p>
-            </div>
-          </div>
-        </div>
+      <div className="max-w-5xl mx-auto mt-50">
 
-        {/* Success Message */}
-        {showSuccessMessage && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3 animate-fade-in">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-            <div>
-              <p className="font-semibold text-green-800">Interview Scheduled Successfully!</p>
-              <p className="text-sm text-green-600">The candidate will be notified via email.</p>
+        {/* Status Messages */}
+        <div className="space-y-4">
+          {/* Success Message */}
+          {showSuccessMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+              <div>
+                <p className="font-semibold text-green-800">Interview Scheduled Successfully!</p>
+                <p className="text-sm text-green-600">The candidate will be notified via email.</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+              <div>
+                <p className="font-semibold text-red-800">Error</p>
+                <p className="text-sm text-red-600">{errorMessage}</p>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Schedule Interview Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Calendar className="w-6 h-6 text-purple-600" />
-              <h2 className="text-2xl font-bold text-gray-800">Upload Resume</h2>
+          <div className="bg-white rounded-2xl shadow-lg p-6 relative">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-6 h-6 text-purple-600" />
+                <h2 className="text-2xl font-bold text-gray-800">Upload Resume</h2>
+              </div>
+              <button
+                onClick={() => navigate('/candidates')}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                aria-label="Show candidates"
+              >
+                <User className="w-4 h-4" />
+                Show Candidates
+              </button>
             </div>
 
             <form onSubmit={handleScheduleInterview} className="space-y-4">
@@ -233,4 +249,4 @@ const HRControl = () => {
   );
 };
 
-export default HRControl;
+export default Resume;

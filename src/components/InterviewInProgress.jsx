@@ -1,5 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Mic, MicOff, SkipForward, Clock } from 'lucide-react';
+import { useDispatch } from 'react-redux';
+import { savePhoto } from '../reduxServices/actions/InterviewAction';
+import { useParams } from 'react-router-dom';
 
 const InterviewInProgress = ({
   currentQuestion,
@@ -22,16 +25,85 @@ const InterviewInProgress = ({
 
   const videoRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
-  const [leftTurns, setLeftTurns] = useState(0);
-  const [rightTurns, setRightTurns] = useState(0);
-  const [lastYaw, setLastYaw] = useState(0);
-  const yawThreshold = 15; // degrees — how much rotation counts as a "turn"
-  const [model, setModel] = useState(null);
-  
+  const [capturedPhotos, setCapturedPhotos] = useState([]);
+  const captureInterval = useRef(null);
+  const dispatch = useDispatch();
+   const { id } = useParams();
 
+   
+  // Function to capture photo from video stream
+  const capturePhoto = async () => {
+    if (!videoRef.current || !cameraActive) return;
+    // Ensure the video has valid dimensions before capturing
+    const vw = videoRef.current.videoWidth;
+    const vh = videoRef.current.videoHeight;
+    if (!vw || !vh) {
+      // Video metadata not ready yet; skip this attempt
+      console.debug('[capturePhoto] Skipped: invalid video dimensions', { vw, vh, readyState: videoRef.current.readyState });
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = vw;
+    canvas.height = vh;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+    if (!blob || !(blob instanceof Blob)) {
+      // In rare cases toBlob may return null; skip to avoid FormData error
+      console.debug('[capturePhoto] Skipped: canvas.toBlob returned null or non-Blob');
+      return;
+    }
+    
+    // Create FormData to send to the server
+    const formData = new FormData();
+    formData.append('image', blob, `interview_${Date.now()}.jpg`);
+    
+    try {
+      // Using dispatch to save photo
+      const result = await dispatch(savePhoto(id,formData));
+      
+      if (result?.payload?.success) {
+        setCapturedPhotos(prev => [...prev, result.payload.data]);
+      }
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+    }
+  };
+
+  // Start/stop photo capture on camera state change
+  useEffect(() => {
+    if (cameraActive) {
+      // Delay first photo slightly to ensure metadata/dimensions are ready
+      const t = setTimeout(() => {
+        capturePhoto();
+      }, 400);
+      
+      // Then capture every minute
+      captureInterval.current = setInterval(capturePhoto, 60000);
+    }
+    
+    return () => {
+      // Clear delayed first capture if pending
+      if (typeof t !== 'undefined') {
+        clearTimeout(t);
+      }
+      if (captureInterval.current) {
+        clearInterval(captureInterval.current);
+      }
+    };
+  }, [cameraActive]);
+  
   useEffect(() => {
     startCamera();
-    return () => stopCamera(); // stop when component unmounts
+    return () => {
+      stopCamera();
+      if (captureInterval.current) {
+        clearInterval(captureInterval.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -73,7 +145,27 @@ const InterviewInProgress = ({
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoRef.current.srcObject = stream;
+      const video = videoRef.current;
+      if (!video) return;
+      video.srcObject = stream;
+      // Wait for metadata to ensure dimensions are available
+      await new Promise((resolve) => {
+        const onLoaded = () => {
+          video.removeEventListener('loadedmetadata', onLoaded);
+          resolve();
+        };
+        if (video.readyState >= 1) {
+          resolve();
+        } else {
+          video.addEventListener('loadedmetadata', onLoaded);
+        }
+      });
+      try {
+        await video.play();
+      } catch (e) {
+        // Autoplay might be blocked but we can still have frames for capture
+        console.debug('Video play() failed or blocked, proceeding after metadata.', e);
+      }
       setCameraActive(true);
     } catch (err) {
       console.error("Camera access denied:", err);
