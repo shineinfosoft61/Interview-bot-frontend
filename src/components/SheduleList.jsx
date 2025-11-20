@@ -13,23 +13,36 @@ const SheduleList = () => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState('Pending');
+  const [searchQuery, setSearchQuery] = useState('');
   const [editHrDoc, setEditHrDoc] = useState(null);
   const [reportInterview, setReportInterview] = useState(null);
 
   const hrDocument = useSelector((state) => state.InterviewReducer.hrDocument || []);
-  console.log('-------------------------',hrDocument);
 
   useEffect(() => {
     dispatch(getHrDocument());
   }, [dispatch]);
-  
+
 
   const filteredInterviews = Array.isArray(hrDocument)
-  ? hrDocument.filter((interview) => {
-      if (!statusFilter || statusFilter === "All") return true;
-      return interview?.interview_status === statusFilter;
-    })
-  : [];
+    ? hrDocument
+        .filter((interview) => {
+          if (!statusFilter || statusFilter === "All") return true;
+          return interview?.interview_status === statusFilter;
+        })
+        .filter((interview) => {
+          if (!searchQuery.trim()) return true;
+          const q = searchQuery.toLowerCase();
+          const fields = [
+            interview?.name,
+            interview?.email,
+            interview?.phone,
+            interview?.technology,
+            interview?.experience,
+          ].map(v => (v || '').toString().toLowerCase());
+          return fields.some(f => f.includes(q));
+        })
+    : [];
 
   // Modal state for editing
   const closeModal = () => {
@@ -66,22 +79,37 @@ const SheduleList = () => {
             </div>
             {/* Status Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600 hidden sm:inline">Filter</span>
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="appearance-none pl-10 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:bg-gray-100 cursor-pointer"
-                >
-                  <option>All</option>
-                  <option>Scheduled</option>
-                  <option>Pending</option>
-                  <option>Completed</option>
-                </select>
-                <Filter className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <svg className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.188l3.71-3.958a.75.75 0 111.08 1.04l-4.24 4.525a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                </svg>
+              {/* Search + Status Filter */}
+              <div className="flex items-center gap-3">
+                {/* Search */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search name, email, phone, tech"
+                    className="bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 w-64"
+                  />
+                  <Filter className="w-4 h-4 text-gray-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+                {/* Status */}
+                <span className="text-sm text-gray-600 hidden sm:inline">Filter</span>
+                <div className="relative">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="appearance-none pl-10 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 hover:bg-gray-100 cursor-pointer"
+                  >
+                    <option>All</option>
+                    <option>Scheduled</option>
+                    <option>Pending</option>
+                    <option>Completed</option>
+                  </select>
+                  <Filter className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <svg className="w-4 h-4 text-gray-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.188l3.71-3.958a.75.75 0 111.08 1.04l-4.24 4.525a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>

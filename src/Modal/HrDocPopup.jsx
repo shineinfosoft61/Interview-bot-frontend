@@ -13,7 +13,7 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
     email: '',
     phone: '',
     technology: '',
-    gmeet_link: '',
+    experience: '',
     shine_link: '',
     time: '',
     upload_doc: '',
@@ -45,7 +45,7 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
       email: editHrDoc.email || '',
       phone: editHrDoc.phone || '',
       technology: editHrDoc.technology || '',
-      gmeet_link: editHrDoc.gmeet_link || '',
+      experience: editHrDoc.experience || '',
       shine_link: editHrDoc.shine_link || '',
       time: toDateTimeLocal(editHrDoc.time),
       upload_doc: editHrDoc.upload_doc || '',
@@ -67,7 +67,7 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
         email: formData.email,
         phone: formData.phone,
         technology: formData.technology,
-        gmeet_link: formData.gmeet_link || null,
+        experience: formData.experience || null,
         shine_link: formData.shine_link || null,
         time: formData.time ? new Date(formData.time).toISOString() : null,
       };
@@ -127,12 +127,12 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
 
           {/* Links */}
           <div className="md:col-span-6">
-            <label className="block text-sm text-gray-600 mb-1">GMeet Link</label>
-            <input name="gmeet_link" value={formData.gmeet_link} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://meet.google.com/..." />
-          </div>
-          <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1">Shine Link</label>
             <input name="shine_link" value={formData.shine_link} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://..." />
+          </div>
+          <div className="md:col-span-6">
+            <label className="block text-sm text-gray-600 mb-1">Experience</label>
+            <input name="experience" value={formData.experience} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://meet.google.com/..." />
           </div>
 
           {/* Date + Time combined */}

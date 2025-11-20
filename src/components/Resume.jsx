@@ -73,14 +73,13 @@ const Resume = () => {
 
     try {
       const result = await dispatch(saveHRDocument(formData));
-      console.log('-------------',result)
       
       if (result.success) {
         setSelectedFiles([]);
         setShowSuccessMessage(true);
         setTimeout(() => {
           setShowSuccessMessage(false);
-          navigate('/scheduled-interviews');
+          navigate('/candidates');
         }, 2000);
       } else {
         setErrorMessage(result.error || 'Failed to upload documents. Please try again.');

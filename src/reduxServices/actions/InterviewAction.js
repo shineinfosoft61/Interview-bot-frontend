@@ -1,5 +1,5 @@
 import axios from "axios";
-import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API,PHOTO_API } from "../api/InterviewApi";
+import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API,PHOTO_API, REGISTER_API } from "../api/InterviewApi";
 import { InterviewConstant } from "../constant/InterviewConstant";
 
 
@@ -32,10 +32,14 @@ function RequirementDetail(data) {
   return { type: InterviewConstant.ALL_REQUIREMENT_DATA, data };
 }
 
-export const getQuestion = () => {
+function UserDetail(data) {
+  return { type: InterviewConstant.ALL_USER_DATA, data };
+}
+
+export const getQuestion = (id) => {
   return async (dispatch) => {
     try {
-      const res = await axios.get(INTERVIEW_API, {
+      const res = await axios.get(`${INTERVIEW_API}${id}/`, {
         // headers: {
         //   "Content-Type": "application/json",
         //   Authorization: "Bearer " + localStorage.getItem("workload-token"),
@@ -80,14 +84,52 @@ export const getPhoto = (candidateId) => {
   };
 };
 
+
+export const getUserList = () => {
+  return async (dispatch) => {
+    try {
+      // Build API URL dynamically
+      const url = `${REGISTER_API}`;
+      const res = await axios.get(url, {
+      });
+
+      dispatch(UserDetail(res.data));
+    } catch (error) {
+      console.error("Error fetching candidate access:", error);
+    }
+  };
+};
+
+// Update existing User
+export const updateUser = (id, data) => {
+  return async (dispatch) => {
+    try {
+      const headers = { "Content-Type": "application/json" };
+      const response = await axios.put(`${REGISTER_API}${id}/`, data, { headers });
+
+      if (response.data) {
+        // optionally refresh list here or let caller decide
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
 // Update existing HR document
 export const updateHRDocument = (id, data) => {
   return async (dispatch) => {
     try {
       const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
       const headers = isFormData
-        ? { "Content-Type": "multipart/form-data" }
-        : { "Content-Type": "application/json" };
+        ? { "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`}
+        : { "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`};
 
       const response = await axios.put(`${HR_API}${id}/`, data, { headers });
 
@@ -110,8 +152,10 @@ export const updateRequirement = (id, data) => {
     try {
       const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
       const headers = isFormData
-        ? { "Content-Type": "multipart/form-data" }
-        : { "Content-Type": "application/json" };
+        ? { "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`}
+        : { "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`};
 
       const response = await axios.put(`${REQUIREMENT_API}${id}/`, data, { headers });
 
@@ -133,10 +177,10 @@ export const getHrDocument = () => {
   return async (dispatch) => {
     try {
       const res = await axios.get(HR_API, {
-        // headers: {
-        //   "Content-Type": "application/json",
-        //   Authorization: "Bearer " + localStorage.getItem("workload-token"),
-        // },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
       dispatch(HrDocumentDetail(res.data));
     } catch (error) {
@@ -149,10 +193,10 @@ export const getRequirement = () => {
   return async (dispatch) => {
     try {
       const res = await axios.get(REQUIREMENT_API, {
-        // headers: {
-        //   "Content-Type": "application/json",
-        //   Authorization: "Bearer " + localStorage.getItem("workload-token"),
-        // },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       });
       console.log('requirement', res.data);
       dispatch(RequirementDetail(res.data));
@@ -180,6 +224,29 @@ export const getHrDocumentById = (id) => {
 };
 
 
+export const AddRegister = (data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(REGISTER_API, data, {
+        headers: {
+          "Content-Type": "application/json",
+          // Authorization: `Bearer ${localStorage.getItem("workload-token")}`,
+        },
+      });
+
+      if (response.data) {
+        console.log("Candidate added successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error adding candidate:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
 
 
 export const addCandidate = (data) => {
@@ -237,6 +304,7 @@ export const saveHRDocument = (data) => {
       const response = await axios.post(HR_API, data, {
         headers: {
           "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -249,7 +317,7 @@ export const saveHRDocument = (data) => {
       }
     } catch (error) {
       console.error("Error adding HR document:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.response?.data?.details };
     }
   };
 };
@@ -353,6 +421,7 @@ export const updateproject = (id, data) => {
 export const PdfDataAction = {
   // loginHandler,
   // userDetailsHandler,
+  AddRegister,
   addCandidate,
   getQuestion,
   updateproject,
@@ -366,4 +435,6 @@ export const PdfDataAction = {
   getRequirement,
   updateRequirement,
   saveQuestion,
+  getUserList,
+  updateUser
 };

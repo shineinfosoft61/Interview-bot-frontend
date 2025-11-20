@@ -23,6 +23,18 @@ const AnswerReportModal = ({ interview, onClose }) => {
 
   const answers = Array.isArray(interview.answers) ? interview.answers : [];
   console.log('answers', answers);
+
+  const calculateScore = (answers) => {
+    if (!answers || answers.length === 0) return 0;
+  
+    const totalRating = answers.reduce((sum, a) => sum + (a.rating || 0), 0);
+    const maxScore = answers.length * 10; // assuming each rating is out of 10
+    return (totalRating / maxScore) * 100;
+  };
+  
+  const finalScore = calculateScore(answers);
+  console.log("Score out of 100:", finalScore.toFixed(2));
+  
   const firstAnsAt = answers[0]?.created_at ? new Date(answers[0]?.created_at) : null;
   const lastAnsAt = answers[answers.length - 1]?.created_at
     ? new Date(answers[answers.length - 1]?.created_at)
@@ -31,20 +43,56 @@ const AnswerReportModal = ({ interview, onClose }) => {
     ? Math.max(1, Math.round((lastAnsAt - firstAnsAt) / 1000 / 60))
     : interview?.durationMinutes || null;
 
-  // Scores (fallback to simple averages when not provided)
-  const numericRatings = answers
-    .map(a => (typeof a?.rating === 'number' ? a.rating : null))
-    .filter(v => v !== null);
-  const avgSkillScore = numericRatings.length
-    ? Math.round((numericRatings.reduce((s, v) => s + v, 0) / numericRatings.length) * 10) // scale ~100
-    : interview?.scores?.skill ?? null;
-  const avgCommScore = (() => {
-    const comm = answers
-      .map(a => (typeof a?.communication_score === 'number' ? a.communication_score : null))
-      .filter(v => v !== null);
-    if (comm.length) return Math.round((comm.reduce((s, v) => s + v, 0) / comm.length) * 10);
-    return interview?.scores?.communication ?? null;
-  })();
+  // Proctoring: dynamic tab switch message
+  const getTabSwitchMessage = (count) => {
+    const c = Number.isFinite(count) ? count : 0;
+    if (c === 0) {
+      return 'No tab switches were recorded during the session, indicating consistent focus throughout the interview.';
+    } else if (c === 1) {
+      return '1 tab switch was recorded. Candidate briefly switched focus during the session.';
+    }
+    return `${c} tab switches were recorded. Candidate frequently switched tabs, indicating distraction or divided attention.`;
+  };
+  const tabSwitchMessage = getTabSwitchMessage(interview?.tab_count);
+
+  const getFaceDetectionMessage = (totalFaces) => {
+    const faces = Number.isFinite(totalFaces) ? totalFaces : 0;
+  
+    if (faces === 0) {
+      return "Only one face detected throughout the session, indicating the user was alone and focused also 0 multiple face detected during assessment.";
+    } 
+    return `${faces} faces were detected throughout the session, indicating the possible presence of multiple people or interruptions during the assessment.`;
+
+  };
+  
+  const totalFaces = interview?.emotion_summary?.total_faces - interview?.emotion_summary?.total_photos;
+  const faceMessage = getFaceDetectionMessage(totalFaces);
+
+  const facialExpression = interview?.emotion_summary?.report_lines || [];
+  const maxExpression =
+  facialExpression.length > 0
+    ? facialExpression.reduce((a, b) =>
+        parseInt(b.match(/\((\d+)%\)/)?.[1] || 0) >
+        parseInt(a.match(/\((\d+)%\)/)?.[1] || 0)
+          ? b
+          : a
+      )
+    : "No facial data available.";
+    
+  const facialExpressionMessage = (Face) => {
+    
+      if (String(Face) === 'Neutral') {
+        return "Candidate maintained a steady, controlled demeanor throughout the session.They weren’t overly expressive but remained relaxed and balanced.";
+      }
+      if (String(Face) === 'Good') {
+        return "Candidate’s face consistently showed engagement, attentiveness, and concentration.They appeared genuinely interested in the questions, maintained good eye contact, and reacted appropriately.";
+      }
+      if (String(Face) === 'Bad') {
+        return "Candidate showed signs of tension, anxiety, or loss of focus.";
+      }  
+    };
+
+    const facialExpressionMes = facialExpressionMessage(maxExpression.split(' ')[0]);
 
   const experience = Array.isArray(interview?.experience) ? interview.experience : [];
   const proctor = interview?.proctoring || null;
@@ -382,7 +430,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
               <div className="text-xs text-gray-500 mb-2">ROUND-WISE SCORES</div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-orange-500">{avgSkillScore || '35'}</div>
+                  <div className="text-2xl font-bold text-orange-500">{finalScore.toFixed(0) || '35'}</div>
                   <div className="text-xs text-gray-500">/ 100</div>
                   <div className="text-xs text-gray-500">Skill based</div>
                 </div>
@@ -461,7 +509,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
                 <h4 className="text-lg font-semibold text-gray-900">Interview rounds completed</h4>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                    <span className="text-orange-600 text-sm font-bold">{Math.round((avgSkillScore || 35) / 10)}</span>
+                    <span className="text-orange-600 text-sm font-bold">{Math.round((finalScore.toFixed(0) || 35) / 10)}</span>
                   </div>
                   <span className="text-sm text-gray-600">/ 100 SCORE</span>
                 </div>
@@ -658,11 +706,21 @@ const AnswerReportModal = ({ interview, onClose }) => {
                   <UserRound className="w-8 h-8 text-gray-500" />
                 </div>
                 <div className="mb-2">
-                  <span className="inline-block px-3 py-1 rounded-full bg-green-600 text-white text-xs font-semibold">Single Person Detected</span>
+                <span
+                className={`inline-block px-3 py-1 rounded-full text-white text-xs font-semibold ${
+                  totalFaces <= 1 ? 'bg-green-600' : 'bg-green-600'
+                }`}
+                >
+                {totalFaces <= 1 ? 'Single Person Detected' : 'Multiple Faces Detected'}
+                </span>
                 </div>
+
                 <div className="text-xs text-gray-600">
-                  Only one face detected throughout the session, indicating the user was alone and focused also 0 multiple face detected during assessment.
+                {totalFaces <= 1
+                ? 'Only one face detected throughout the session'
+                : `${totalFaces} faces were detected throughout the session`}
                 </div>
+
               </div>
 
               {/* Good Expression */}
@@ -671,10 +729,10 @@ const AnswerReportModal = ({ interview, onClose }) => {
                   <Smile className="w-8 h-8 text-gray-500" />
                 </div>
                 <div className="mb-2">
-                  <span className="inline-block px-3 py-1 rounded-full bg-green-600 text-white text-xs font-semibold">Good</span>
+                  <span className="inline-block px-3 py-1 rounded-full bg-green-600 text-white text-xs font-semibold">{maxExpression.split(' ')[0]}</span>
                 </div>
                 <div className="text-xs text-gray-600">
-                  Facial expressions showed strong focus and interest.
+                {maxExpression.split(":")[1]?.trim() || "No expression data available."}
                 </div>
               </div>
             </div>
@@ -684,15 +742,15 @@ const AnswerReportModal = ({ interview, onClose }) => {
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
                   <span className="font-semibold">•</span>
-                  <span><span className="font-semibold">Tab Switches Detected:</span> No tab switches were recorded during the session, indicating consistent focus throughout the interview.</span>
+                  <span><span className="font-semibold">Tab Switches Detected:</span> {tabSwitchMessage}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-semibold">•</span>
-                  <span><span className="font-semibold">Face Detection:</span> Only one face was visible throughout the session, indicating the user was alone and focused also 0 multiple face detected during assessment.</span>
+                  <span><span className="font-semibold">Face Detection:</span> {faceMessage}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-semibold">•</span>
-                  <span><span className="font-semibold">Facial Expression:</span> The candidate appeared relaxed and composed throughout the interview.</span>
+                  <span><span className="font-semibold">Facial Expression:</span> {facialExpressionMes}</span>
                 </li>
               </ul>
               

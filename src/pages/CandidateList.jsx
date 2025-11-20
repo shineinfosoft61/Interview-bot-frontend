@@ -15,6 +15,7 @@ const CandidateList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editHrDoc, setEditHrDoc] = useState(null);
   const [candidateRequirements, setCandidateRequirements] = useState({});
@@ -77,10 +78,22 @@ const CandidateList = () => {
     }
   };
 
-  const filteredCandidates = hrDocument.filter(candidate => {
-    if (statusFilter === 'All') return true;
-    return candidate.interview_status === statusFilter;
-  });
+  const filteredCandidates = hrDocument
+    .filter(candidate => {
+      if (statusFilter === 'All') return true;
+      return candidate.interview_status === statusFilter;
+    })
+    .filter(candidate => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      const fields = [
+        candidate.name,
+        candidate.email,
+        candidate.technology,
+        candidate.phone,
+      ].map(v => (v || '').toString().toLowerCase());
+      return fields.some(f => f.includes(q));
+    });
 
   const getStatusBadge = (status) => {
     switch(status) {
@@ -109,7 +122,7 @@ const CandidateList = () => {
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
-      <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
+      <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6 mt-3">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <button
@@ -122,7 +135,21 @@ const CandidateList = () => {
             <h1 className="text-2xl font-bold text-gray-800">Candidates</h1>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            {/* Search */}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, phone"
+                className="bg-white border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+              />
+              <span className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
+                <FiFilter />
+              </span>
+            </div>
+            {/* Status Filter */}
             <div className="relative">
               <select
                 value={statusFilter}

@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { API_URL } from '../reduxServices/api/InterviewApi';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from "../context/AuthContext.jsx";
+
 
 const Login = () => {
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+
+  const { loginUser } = useContext(AuthContext);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:8000/login', form);
+      const res = await axios.post(API_URL + '/login/', form);
       if (res.status === 200) {
+        console.log(res.status);
+        loginUser(res.data.user, res.data.access);
+        navigate('/hr-control');
         setMessage('✅ Login successful!');
         // Save token if returned
-        // localStorage.setItem("token", res.data.access_token);
       }
     } catch (err) {
       setMessage('❌ Login failed. Check your credentials.');
@@ -28,14 +37,14 @@ const Login = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-1">Username</label>
+            <label className="block text-gray-700 mb-1">Email</label>
             <input
-              type="text"
-              name="username"
-              value={form.username}
+              type="email"
+              name="email"
+              value={form.email}
               onChange={handleChange}
               className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
-              placeholder="Enter your username"
+              placeholder="Enter your email"
               required
             />
           </div>

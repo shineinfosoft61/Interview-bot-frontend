@@ -12,9 +12,19 @@ export const useSpeechRecognition = () => {
   const recognitionRef = useRef(null);
   const finalTranscriptRef = useRef('');
   const speakingTimeoutRef = useRef(null);
+  const isRecordingRef = useRef(false);
+  const micEnabledRef = useRef(false);
 
+  // Keep refs in sync with state
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
 
-  // Initialize speech recognition
+  useEffect(() => {
+    micEnabledRef.current = micEnabled;
+  }, [micEnabled]);
+
+  // Initialize speech recognition (once)
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -62,9 +72,9 @@ export const useSpeechRecognition = () => {
       recognitionRef.current.onend = () => {
         setIsListening(false);
         // Auto-restart if still recording and not manually stopped
-        if (isRecording && micEnabled) {
+        if (isRecordingRef.current && micEnabledRef.current) {
           setTimeout(() => {
-            if (isRecording && recognitionRef.current) {
+            if (isRecordingRef.current && recognitionRef.current) {
               try {
                 recognitionRef.current.start();
                 setIsListening(true);
@@ -86,9 +96,9 @@ export const useSpeechRecognition = () => {
         switch (event.error) {
           case 'no-speech':
             // Continue listening for speech
-            if (isRecording && micEnabled) {
+            if (isRecordingRef.current && micEnabledRef.current) {
               setTimeout(() => {
-                if (isRecording && recognitionRef.current) {
+                if (isRecordingRef.current && recognitionRef.current) {
                   try {
                     recognitionRef.current.start();
                   } catch (error) {
@@ -110,9 +120,9 @@ export const useSpeechRecognition = () => {
             break;
           case 'network':
             // Try to restart after network error
-            if (isRecording && micEnabled) {
+            if (isRecordingRef.current && micEnabledRef.current) {
               setTimeout(() => {
-                if (isRecording && recognitionRef.current) {
+                if (isRecordingRef.current && recognitionRef.current) {
                   try {
                     recognitionRef.current.start();
                   } catch (error) {
@@ -124,9 +134,9 @@ export const useSpeechRecognition = () => {
             break;
           default:
             // For other errors, try to restart
-            if (isRecording && micEnabled) {
+            if (isRecordingRef.current && micEnabledRef.current) {
               setTimeout(() => {
-                if (isRecording && recognitionRef.current) {
+                if (isRecordingRef.current && recognitionRef.current) {
                   try {
                     recognitionRef.current.start();
                   } catch (error) {
@@ -144,10 +154,18 @@ export const useSpeechRecognition = () => {
         setIsListening(true);
       };
     }
-  }, [isRecording, micEnabled]);
+    // Cleanup on unmount
+    return () => {
+      try {
+        recognitionRef.current?.stop?.();
+      } catch {}
+      recognitionRef.current = null;
+      clearTimeout(speakingTimeoutRef.current);
+    };
+  }, []);
 
   const startRecording = () => {
-    if (recognitionRef.current && micEnabled) {
+    if (recognitionRef.current && micEnabledRef.current) {
       setIsRecording(true);
       console.log("IsListening", isListening);
 
@@ -162,7 +180,7 @@ export const useSpeechRecognition = () => {
         
         // Retry after a short delay
         setTimeout(() => {
-          if (micEnabled) {
+          if (micEnabledRef.current) {
             try {
               recognitionRef.current.start();
               setIsRecording(true);
@@ -178,9 +196,15 @@ export const useSpeechRecognition = () => {
 
   const stopRecording = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        try { recognitionRef.current.abort?.(); } catch {}
+      }
       setIsRecording(false);
       setIsListening(false);
+      clearTimeout(speakingTimeoutRef.current);
+      setIsUserSpeaking(false);
     }
   };
 

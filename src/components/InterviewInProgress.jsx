@@ -20,7 +20,8 @@ const InterviewInProgress = ({
   formatTime,
   isUserSpeaking,
   tabSwitchesRef,
-  lastSwitchAtRef
+  lastSwitchAtRef,
+  registerStopCamera
 }) => {
 
   const videoRef = useRef(null);
@@ -180,6 +181,18 @@ const InterviewInProgress = ({
     }
     setCameraActive(false);
   };
+
+  // Expose stopCamera to parent
+  useEffect(() => {
+    if (typeof registerStopCamera === 'function') {
+      registerStopCamera(stopCamera);
+    }
+    return () => {
+      if (typeof registerStopCamera === 'function') {
+        registerStopCamera(null);
+      }
+    };
+  }, [registerStopCamera]);
 
 
     

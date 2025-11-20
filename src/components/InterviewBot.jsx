@@ -29,6 +29,7 @@ const InterviewBot = () => {
   const [speechEnabled, setSpeechEnabled] = useState(true);
   const tabSwitchesRef = useRef(0);
   const lastSwitchAtRef = useRef(0);
+  const stopCameraRef = useRef(null);
 
   const totalQuestions = 10;
   
@@ -79,32 +80,35 @@ const InterviewBot = () => {
   const fetchNewQuestion = async () => {
     setQuestionsLoading(true);
     try {
-      await dispatch(getQuestion());
+      await dispatch(getQuestion(id));
     } catch (error) {
       console.error('Error fetching question:', error);
     }
     setQuestionsLoading(false);
   };
 
-  // Update current question when questions array changes
+  // Keep currentQuestion in sync with questions and currentQuestionIndex
+  // This effect does NOT trigger timers or speech; it only sets the question reference
   useEffect(() => {
-    if (questions.length > 0) {
-      const latestQuestion = questions[questions.length - 1];
-      setCurrentQuestion(latestQuestion);
-      
-      // Reset and start timer for new question if interview is in progress
-      if (isStarted && !interviewComplete) {
-        const questionTimeLimit = latestQuestion.time_limit || 120;
-        resetTimer(questionTimeLimit);
-        startTimer(questionTimeLimit);
-      }
-      
-      // Speak the question if interview is started and speech is enabled
-      if (isStarted && speechEnabled && latestQuestion.text) {
-        speakQuestion(latestQuestion.text);
+    if (questions.length === 0) return;
+    const clampedIndex = Math.min(currentQuestionIndex, questions.length - 1);
+    if (questions[clampedIndex]) {
+      setCurrentQuestion(questions[clampedIndex]);
+    }
+  }, [questions, currentQuestionIndex]);
+
+  // Start timer and speak when the currentQuestion changes while interview is in progress
+  useEffect(() => {
+    if (!currentQuestion) return;
+    if (isStarted && !interviewComplete) {
+      const questionTimeLimit = currentQuestion.time_limit || 120;
+      resetTimer(questionTimeLimit);
+      startTimer(questionTimeLimit);
+      if (speechEnabled && currentQuestion.text) {
+        speakQuestion(currentQuestion.text);
       }
     }
-  }, [questions, isStarted, speechEnabled, interviewComplete]);
+  }, [currentQuestion, isStarted, speechEnabled, interviewComplete]);
 
   // Timer auto-advance logic
   useEffect(() => {
@@ -184,6 +188,7 @@ const InterviewBot = () => {
     }
     setIsSpeaking(false);
     setMicEnabled(true);
+    resetTranscript();
     
     // Save current answer
     const newAnswer = {
@@ -202,15 +207,32 @@ const InterviewBot = () => {
     // Save to localStorage (simulating database)
     localStorage.setItem('interviewAnswers', JSON.stringify(updatedAnswers));
 
-    // Move to next question or complete interview
-    if (currentQuestionIndex < totalQuestions - 1) {
+    // Move to next question from pre-fetched list if available
+    if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       resetTranscript();
       stopRecording();
       setMicEnabled(false); // Disable mic for next question
-      // Fetch next question from API
+      return; // We already have the next question in memory
+    }
+
+    // If we have exhausted pre-fetched questions but interview isn't over, fetch more
+    if (currentQuestionIndex < totalQuestions - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      resetTranscript();
+      stopRecording();
+      setMicEnabled(false);
       await fetchNewQuestion();
+      return;
     } else {
+      // Turn off camera before completing interview
+      try {
+        if (typeof stopCameraRef.current === 'function') {
+          stopCameraRef.current();
+        }
+      } catch (e) {
+        console.debug('Failed to stop camera on completion:', e);
+      }
       setInterviewComplete(true);
       stopRecording();
       setMicEnabled(false);
@@ -325,6 +347,7 @@ const InterviewBot = () => {
       isUserSpeaking={isUserSpeaking}
       tabSwitchesRef={tabSwitchesRef}
       lastSwitchAtRef={lastSwitchAtRef}
+      registerStopCamera={(fn) => { stopCameraRef.current = fn; }}
     />
   );
 };

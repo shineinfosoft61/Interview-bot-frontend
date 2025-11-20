@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { AuthContext } from "../context/AuthContext.jsx";
+import { FiLogOut } from 'react-icons/fi';
 
 // Simple icon component for inline SVG paths (Heroicons-like)
 const Icon = ({ path, className = 'w-5 h-5' }) => (
@@ -10,8 +12,13 @@ const Icon = ({ path, className = 'w-5 h-5' }) => (
 
 const NavbarComponent = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
   const toggleSidebar = () => setIsOpen((v) => !v);
+  const { logoutUser, user } = useContext(AuthContext);
+  const userName = user?.name || user?.username || 'User';
+  const userRole = user?.role || 'Normal';
+  const initial = (user?.name || user?.username || user?.email || 'U').charAt(0).toUpperCase();
 
   const navItems = [
     { to: '/', label: 'Dashboard', icon: <Icon path="M2.25 12l8.954-8.955a1.125 1.125 0 011.592 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /> },
@@ -20,11 +27,22 @@ const NavbarComponent = () => {
     // { to: '/job-descriptions', label: 'Job Descriptions', icon: <Icon path="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /> },
     { to: '/requirements', label: 'Requirement', icon: <Icon path="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /> },
     // { to: '/chat', label: 'Chat', icon: <Icon path="M2.25 12.75c0 3.728 3.364 6.75 7.5 6.75a8.7 8.7 0 003.463-.689L21 21l-1.19-3.095A6.75 6.75 0 0019.5 12.75c0-3.728-3.364-6.75-7.5-6.75s-7.5 3.022-7.5 6.75z" /> },
-    {to: '/resume', label: 'Resume', icon: <Icon path="M6 2a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6H6zm8 7V3.5L18.5 9H14z" /> },
-    { to: '/settings', label: 'Settings', icon: <Icon path="M4.5 12a7.5 7.5 0 1015 0 7.5 7.5 0 00-15 0zm7.5-3.75a.75.75 0 01.75.75v2.25H15a.75.75 0 010 1.5h-2.25V15a.75.75 0 01-1.5 0v-2.25H9a.75.75 0 010-1.5h2.25V9a.75.75 0 01.75-.75z" /> },
+    { to: '/resume', label: 'Resume', icon: <Icon path="M6 2a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6H6zm8 7V3.5L18.5 9H14z" /> },
     { to: '/login', label: 'Login', icon: <Icon path="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15" /> },
     { to: '/signup', label: 'Signup', icon: <Icon path="M12 4.5v15m-7.5-7.5h15" /> },
+    ...(user?.role === 'Admin' ? [{ to: '/users', label: 'Users', icon: <Icon path="M15 19a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0h3a2 2 0 002-2v-1a4 4 0 00-4-4h-1M7 19H4a2 2 0 01-2-2v-1a4 4 0 014-4h1m8-4a4 4 0 11-8 0 4 4 0 018 0z" /> }] : []),
   ];
+
+  // Determine authentication from localStorage token
+  const isAuthenticated = !!localStorage.getItem('token');
+  const visibleItems = isAuthenticated
+    ? navItems.filter(item => item.to !== '/login' && item.to !== '/signup')
+    : navItems.filter(item => item.to === '/login' || item.to === '/signup');
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate('/login');
+  };
 
   const isActive = (to) => location.pathname === to;
 
@@ -121,7 +139,7 @@ const NavbarComponent = () => {
 
         {/* Navigation */}
         <nav className="px-2 py-3 overflow-y-auto h-[calc(100vh-16rem)]">
-          {navItems.map((item) => (
+          {visibleItems.map((item) => (
             <Link
               key={item.to}
               to={item.to}
@@ -134,6 +152,30 @@ const NavbarComponent = () => {
             </Link>
           ))}
         </nav>       
+
+        {/* Bottom profile section */}
+        {isAuthenticated && (
+          <div className="absolute bottom-0 left-0 right-0 border-t border-gray-800/60 p-3 bg-[#0f1115]">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center text-sm font-semibold">
+                  {initial}
+                </div>
+                <div className={`${isOpen ? 'block' : 'hidden md:hidden'} min-w-0`}>
+                  <div className="text-sm font-medium text-gray-100 truncate">{userName}</div>
+                  <div className="text-xs text-gray-400 truncate">{userRole}</div>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-md hover:bg-white/5 text-gray-300 border border-transparent hover:border-gray-700"
+                title="Logout"
+              >
+                <FiLogOut className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
       </aside>
       {/* Desktop spacer to push content right so sidebar doesn't cover content */}
       <div

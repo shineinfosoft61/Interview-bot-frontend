@@ -2,7 +2,7 @@
 
 // src/App.js
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation, useNavigate } from "react-router-dom";
 import NavbarComponent from "./components/Navbar";
 import InterviewBot from "./components/InterviewBot";
 import HRControl from "./components/HRControl";
@@ -14,15 +14,12 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import "./css/style.css";
 import Resume from './components/Resume';
-// import { authActionDataAction } from "./reduxServices/actions/Authaction";
-// import AddProject from "./pages/project/AddProject";
+import Users from './pages/Users';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer, toast } from 'react-toastify';
 import { useSelector,useDispatch } from 'react-redux';
 import { getCandidateAccess } from './reduxServices/actions/InterviewAction';
 import { useParams } from 'react-router-dom';
-
-
 
 
 
@@ -50,26 +47,61 @@ const InterviewBotWrapper = () => {
   );
 };
 
-function App() {
+// Inner content that can use hooks like useLocation (inside Router)
+function AppContent() {
   const [isOpen, setIsOpen] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
+  const location = useLocation();
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    setIsAuthenticated(!!localStorage.getItem('token'));
+  }, [location]);
+
+  // If authenticated and still on /login, push to a default app page
+  useEffect(() => {
+    if (isAuthenticated && location.pathname === '/login') {
+      navigate('/hr-control', { replace: true });
+    }
+  }, [isAuthenticated, location.pathname, navigate]);
+
+  return (
+    <>
+      {isAuthenticated && <NavbarComponent isOpen={isOpen} setIsOpen={setIsOpen}/>} 
+      <Routes>
+        {isAuthenticated ? (
+          <>
+            {/* Dynamic route for UUID */}
+            <Route path="/:id" element={<InterviewBotWrapper />} />
+            <Route path="/hr-control" element={<HRControl />} />
+            <Route path="/scheduled-interviews" element={<SheduleList />} />
+            <Route path="/job-descriptions" element={<JobDescriptions />} />
+            <Route path="/candidates" element={<CandidateList />} />
+            <Route path="/requirements" element={<Requirements />} />
+            <Route path="/resume" element={<Resume />} />
+            <Route path="/users" element={<Users />} />
+            <Route path="/signup" element={<Signup />} />
+            {/* Default redirect when authenticated */}
+            <Route path="*" element={<Navigate to="/hr-control" replace />} />
+          </>
+        ) : (
+          <>
+            {/* Unauthenticated users see only Login */}
+            <Route path="/login" element={<Login />} />
+            {/* Redirect everything else to login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        )}
+      </Routes>
+    </>
+  );
+}
+
+function App() {
   return (
     <Router>
       <ToastContainer position="top-right" autoClose={3000} />
-      <NavbarComponent isOpen={isOpen} setIsOpen={setIsOpen}/>
-      <Routes>
-        
-        {/* Dynamic route for UUID */}
-        <Route path="/:id" element={<InterviewBotWrapper />} />
-        <Route path="/hr-control" element={<HRControl />} />
-        <Route path="/scheduled-interviews" element={<SheduleList />} />
-        <Route path="/job-descriptions" element={<JobDescriptions />} />
-        <Route path="/candidates" element={<CandidateList />} />
-        <Route path="/requirements" element={<Requirements />} />
-        <Route path="/resume" element={<Resume />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-      </Routes>
+      <AppContent />
     </Router>
   );
 }
