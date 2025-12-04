@@ -9,6 +9,7 @@ const initailState = {
     photo: [],
     requirement: [],
     user: [],
+    chat: [],
 };
 
 
@@ -39,6 +40,9 @@ export default function InterviewReducer(state = initailState, action) {
 
       case InterviewConstant.ALL_USER_DATA:
         return { ...state, user: action.data };
+
+      case InterviewConstant.ALL_CHAT_DATA:
+        return { ...state, chat: [...state.chat, action.data]};
 
       default:
         return state;

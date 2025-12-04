@@ -7,16 +7,37 @@ import { saveQuestion } from '../reduxServices/actions/InterviewAction';
 const QuestionUploadPopup = ({ editHrDoc, isOpen, onClose, onUpload}) => {
   const dispatch = useDispatch();
   const [file, setFile] = useState(null);
+  const [fileError, setFileError] = useState('');
   const [questions, setQuestions] = useState([{ id: Date.now(), text: '' }]);
   const [activeTab, setActiveTab] = useState('manual');
   console.log("editHrDoc", editHrDoc);
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const selected = e.target.files && e.target.files[0];
+    if (!selected) {
+      setFile(null);
+      setFileError('');
+      return;
+    }
+
+    const allowedExt = ['txt', 'pdf'];
+    const nameParts = selected.name.split('.');
+    const ext = nameParts.length > 1 ? nameParts.pop().toLowerCase() : '';
+
+    if (!allowedExt.includes(ext)) {
+      setFile(null);
+      setFileError('Only .txt or .pdf files are allowed.');
+      // Optional: clear the input value to allow re-selecting same file
+      try { e.target.value = ''; } catch {}
+      return;
+    }
+
+    setFile(selected);
+    setFileError('');
   };
 
   const handleUpload = () => {
-    if (file) {
+    if (file && !fileError) {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('hr', editHrDoc?.id);
@@ -52,7 +73,7 @@ const QuestionUploadPopup = ({ editHrDoc, isOpen, onClose, onUpload}) => {
       validQuestions.forEach(question => {
         const payload = {
           text: question.text,
-          hr: editHrDoc?.id
+          candidate: editHrDoc?.id
         };
         dispatch(saveQuestion(payload));
         onClose();
@@ -170,13 +191,16 @@ const QuestionUploadPopup = ({ editHrDoc, isOpen, onClose, onUpload}) => {
                                   type="file" 
                                   className="sr-only" 
                                   onChange={handleFileChange}
-                                  accept=".csv,.txt,.docx,.pdf"
+                                  accept=".txt,.pdf"
                                 />
                               </span>
                             </div>
                             <p className="text-xs text-gray-500">
-                              CSV, TXT, DOCX, PDF up to 10MB
+                              TXT, PDF up to 10MB
                             </p>
+                            {fileError && (
+                              <p className="mt-2 text-sm text-red-600">{fileError}</p>
+                            )}
                           </div>
                         </div>
                       </label>
@@ -214,9 +238,9 @@ const QuestionUploadPopup = ({ editHrDoc, isOpen, onClose, onUpload}) => {
                     <div className="mt-6">
                       <button
                         onClick={handleUpload}
-                        disabled={!file}
+                        disabled={!file || !!fileError}
                         className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                          file 
+                          file && !fileError
                             ? 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500' 
                             : 'bg-gray-300 cursor-not-allowed'
                         }`}

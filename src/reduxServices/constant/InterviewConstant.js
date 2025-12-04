@@ -7,5 +7,6 @@ export const InterviewConstant = {
     ALL_PHOTO_DATA : "ALL_PHOTO_DATA",
     ALL_REQUIREMENT_DATA : "ALL_REQUIREMENT_DATA",
     ALL_USER_DATA : "ALL_USER_DATA",
+    ALL_CHAT_DATA : "ALL_CHAT_DATA",
   };
   

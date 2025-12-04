@@ -26,7 +26,7 @@ import { useParams } from 'react-router-dom';
 const InterviewBotWrapper = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
-  const candidateAccess = useSelector((state) => state.InterviewReducer.candidateAccess);
+  const candidateAccess = useSelector((state) => state.InterviewReducer.candidateAccess);  
 
   useEffect(() => {
     if (id) {
@@ -72,7 +72,6 @@ function AppContent() {
         {isAuthenticated ? (
           <>
             {/* Dynamic route for UUID */}
-            <Route path="/:id" element={<InterviewBotWrapper />} />
             <Route path="/hr-control" element={<HRControl />} />
             <Route path="/scheduled-interviews" element={<SheduleList />} />
             <Route path="/job-descriptions" element={<JobDescriptions />} />
@@ -86,6 +85,7 @@ function AppContent() {
           </>
         ) : (
           <>
+          <Route path="/:id" element={<InterviewBotWrapper />} />
             {/* Unauthenticated users see only Login */}
             <Route path="/login" element={<Login />} />
             {/* Redirect everything else to login */}

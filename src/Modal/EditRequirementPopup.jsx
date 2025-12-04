@@ -94,7 +94,6 @@ const EditRequirementPopup = ({ requirement, onClose, onUpdate }) => {
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                required
               />
             </div>
 
@@ -109,7 +108,6 @@ const EditRequirementPopup = ({ requirement, onClose, onUpdate }) => {
                 onChange={handleChange}
                 placeholder="e.g., 3-5 years"
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                required
               />
             </div>
 
@@ -124,7 +122,6 @@ const EditRequirementPopup = ({ requirement, onClose, onUpdate }) => {
                 onChange={handleChange}
                 placeholder="e.g., React, Node.js"
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                required
               />
             </div>
 
@@ -137,7 +134,6 @@ const EditRequirementPopup = ({ requirement, onClose, onUpdate }) => {
                 name="No_of_openings"
                 value={formData.No_of_openings}
                 onChange={handleChange}
-                min="1"
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
             </div>
@@ -151,7 +147,6 @@ const EditRequirementPopup = ({ requirement, onClose, onUpdate }) => {
                 name="notice_period"
                 value={formData.notice_period}
                 onChange={handleChange}
-                min="0"
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
               />
             </div>

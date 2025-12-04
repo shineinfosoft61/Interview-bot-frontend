@@ -192,9 +192,9 @@ const InterviewBot = () => {
     
     // Save current answer
     const newAnswer = {
-      hr : id,
+      candidate : id,
       question: currentQuestion.id,
-      candidate: userData.id,
+      // candidate: userData.id,
       answer_text: currentAnswer,
       timestamp: new Date().toISOString(),
       timeSpent: (currentQuestion.time_limit || 120) - timeLeft

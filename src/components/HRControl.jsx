@@ -12,6 +12,7 @@ const HRControl = () => {
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Handle file selection
   const handleFileChange = (e) => {
@@ -69,6 +70,7 @@ const HRControl = () => {
     });
 
     setIsUploading(true);
+    setErrorMessage('');
 
     try {
       const result = await dispatch(saveHRDocument(formData));
@@ -81,10 +83,10 @@ const HRControl = () => {
           navigate('/scheduled-interviews');
         }, 2000);
       } else {
-        alert('Failed to upload documents: ' + (result.error || 'Unknown error'));
+        setErrorMessage('Failed to upload documents: ' + (result.error || 'Unknown error'));
       }
     } catch (error) {
-      alert('Error uploading documents: ' + error.message);
+      setErrorMessage('Error uploading documents: ' + error.message);
     } finally {
       setIsUploading(false);
     }
@@ -126,6 +128,17 @@ const HRControl = () => {
           </div>
         )}
 
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3 animate-fade-in">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+            <div>
+              <p className="font-semibold text-red-800">Upload Failed</p>
+              <p className="text-sm text-red-600 break-words">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Schedule Interview Form */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
@@ -158,13 +171,13 @@ const HRControl = () => {
                     <input
                       type="file"
                       multiple
-                      accept=".pdf,.doc,.docx"
+                      accept=".pdf,.docx"
                       onChange={handleFileChange}
                       className="hidden"
                     />
                   </label>
                   <p className="text-xs text-gray-500 mt-2">
-                    Supported formats: PDF, DOC, DOCX (Multiple files allowed)
+                    Supported formats: PDF, DOCX (Multiple files allowed)
                   </p>
                 </div>
 

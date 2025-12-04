@@ -22,12 +22,10 @@ const NavbarComponent = () => {
 
   const navItems = [
     { to: '/', label: 'Dashboard', icon: <Icon path="M2.25 12l8.954-8.955a1.125 1.125 0 011.592 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /> },
+    { to: '/job-descriptions', label: 'Requirement', icon: <Icon path="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /> },
+    { to: '/candidates', label: 'Candidate', icon: <Icon path="M6 2a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6H6zm8 7V3.5L18.5 9H14z" /> },
     { to: '/hr-control', label: 'Quick Interview', icon: <Icon path="M3 6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V6.75z" /> },
-    { to: '/scheduled-interviews', label: 'Schedules', icon: <Icon path="M6.75 3v2.25m10.5 0V3M3.75 8.25h16.5m-15 3.75h3.75m-3.75 3h3.75m3 0h3.75m-3.75-3h3.75" /> },
-    // { to: '/job-descriptions', label: 'Job Descriptions', icon: <Icon path="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /> },
-    { to: '/requirements', label: 'Requirement', icon: <Icon path="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /> },
-    // { to: '/chat', label: 'Chat', icon: <Icon path="M2.25 12.75c0 3.728 3.364 6.75 7.5 6.75a8.7 8.7 0 003.463-.689L21 21l-1.19-3.095A6.75 6.75 0 0019.5 12.75c0-3.728-3.364-6.75-7.5-6.75s-7.5 3.022-7.5 6.75z" /> },
-    { to: '/resume', label: 'Resume', icon: <Icon path="M6 2a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6H6zm8 7V3.5L18.5 9H14z" /> },
+    { to: '/scheduled-interviews', label: 'Schedules', icon: <Icon path="M4 5h16v4H4z M4 10h16v10H4z M7 3h2v4H7z M15 3h2v4h-2z" /> },
     { to: '/login', label: 'Login', icon: <Icon path="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15" /> },
     { to: '/signup', label: 'Signup', icon: <Icon path="M12 4.5v15m-7.5-7.5h15" /> },
     ...(user?.role === 'Admin' ? [{ to: '/users', label: 'Users', icon: <Icon path="M15 19a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0h3a2 2 0 002-2v-1a4 4 0 00-4-4h-1M7 19H4a2 2 0 01-2-2v-1a4 4 0 014-4h1m8-4a4 4 0 11-8 0 4 4 0 018 0z" /> }] : []),
@@ -97,7 +95,7 @@ const NavbarComponent = () => {
       <aside
         className={`fixed top-0 left-0 z-30 h-screen transition-[width,transform] duration-300 ease-in-out relative
           bg-[#0f1115] text-gray-200 border-r border-gray-800 shadow-xl
-          ${isOpen ? 'w-72 translate-x-0' : 'w-16 -translate-x-0'} md:translate-x-0`}
+          ${isOpen ? 'w-60 translate-x-0' : 'w-16 -translate-x-0'} md:translate-x-0`}
       >
         {/* Header / Brand */}
         <div className="h-16 px-3 flex items-center justify-between border-b border-gray-800/60">
@@ -121,20 +119,6 @@ const NavbarComponent = () => {
           <button onClick={toggleSidebar} className="md:inline-flex p-2 rounded hover:bg-white/5">
             <Icon path="M4 6h16M4 12h16M4 18h16" />
           </button>
-        </div>
-
-        {/* Search */}
-        <div className={`px-3 py-3 border-b border-gray-800/60 ${isOpen ? 'opacity-100' : 'opacity-0 md:opacity-0'} transition-opacity`}>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <Icon path="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z" />
-            </span>
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full bg-[#12151b] border border-gray-800 rounded-md pl-10 pr-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-600"
-            />
-          </div>
         </div>
 
         {/* Navigation */}

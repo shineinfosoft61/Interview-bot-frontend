@@ -9,14 +9,14 @@ const UserEditPopup = ({ user, onClose }) => {
   const dispatch = useDispatch();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     role: 'Normal',
   });
 
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || user.username || '',
+        username: user.name || user.username || '',
         role: user.role || (user.is_staff ? 'Admin' : 'Normal'),
       });
     }
@@ -36,7 +36,7 @@ const UserEditPopup = ({ user, onClose }) => {
     try {
       setSaving(true);
       const payload = {
-        name: formData.name,
+        username: formData.username,
         role: formData.role,
       };
       const res = await dispatch(updateUser(user.id, payload));
@@ -81,8 +81,8 @@ const UserEditPopup = ({ user, onClose }) => {
               <label className="block text-sm font-medium text-gray-700">Name</label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="username"
+                value={formData.username}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 required

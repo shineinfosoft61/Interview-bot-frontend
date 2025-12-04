@@ -416,11 +416,11 @@ const AnswerReportModal = ({ interview, onClose }) => {
                 )}
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">{interview?.name || 'Kunal'}</h2>
-                <p className="text-sm text-gray-600 mb-1">{`${interview?.technology} Developer` || 'Full Stack Developer'}</p>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">{interview?.name}</h2>
+                <p className="text-sm text-gray-600 mb-1">{`${interview?.technology} Developer`}</p>
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <Mail className="w-4 h-4" />
-                  <span>{interview?.email || 'kunal.pd@gmail.com'}</span>
+                  <span>{interview?.email}</span>
                 </div>
               </div>
             </div>
@@ -787,19 +787,19 @@ const AnswerReportModal = ({ interview, onClose }) => {
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center">
                     <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">H</span>
+                      <span className="text-white text-xs font-bold">S</span>
                     </div>
                   </div>
                   <div>
-                    <div className="font-semibold">Homans</div>
-                    <div className="text-xs opacity-90">connect@homans.ai</div>
+                    <div className="font-semibold">Shine</div>
+                    <div className="text-xs opacity-90">connect@shine.ai</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg">
                   <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
                     <span className="text-red-500 text-xs font-bold">AI</span>
                   </div>
-                  <span className="text-sm font-medium">Homan's AI Interviewer has rated this candidate as</span>
+                  <span className="text-sm font-medium">Shine AI Interviewer has rated this candidate as</span>
                   <span className="bg-white text-red-500 px-2 py-1 rounded text-sm font-bold">Poor</span>
                 </div>
               </div>

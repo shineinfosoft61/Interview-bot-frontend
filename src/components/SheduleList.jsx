@@ -12,9 +12,10 @@ const SheduleList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('Pending');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [editHrDoc, setEditHrDoc] = useState(null);
+  const [quickInterview, setQuickInterview] = useState(false);
   const [reportInterview, setReportInterview] = useState(null);
 
   const hrDocument = useSelector((state) => state.InterviewReducer.hrDocument || []);
@@ -48,6 +49,7 @@ const SheduleList = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditHrDoc(null);
+    setQuickInterview(false);
   };
 
   const closeReport = () => {
@@ -175,7 +177,7 @@ const SheduleList = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setEditHrDoc(interview); setIsModalOpen(true); }}
+                          onClick={(e) => { e.stopPropagation(); setEditHrDoc(interview); setQuickInterview(true); setIsModalOpen(true); }}
                           className="inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -242,6 +244,7 @@ const SheduleList = () => {
             editHrDoc = {editHrDoc}
             closeModal={closeModal}
             setEditHrDoc={setEditHrDoc}
+            quickInterview={quickInterview}
           />
 
         )}

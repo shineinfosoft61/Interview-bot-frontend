@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FiArrowLeft, FiEdit2, FiFile } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2, FiFile, FiX, FiMessageSquare } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { getRequirement, updateRequirement } from '../reduxServices/actions/InterviewAction';
 import EditRequirementPopup from '../Modal/EditRequirementPopup';
 import { toast } from 'react-toastify';
+import Requirements from '../components/Requirements';
+import ChatSidebar from '../components/ChatSidebar';
 
 const JobDescriptions = () => {
   const dispatch = useDispatch();
@@ -16,6 +18,8 @@ const JobDescriptions = () => {
   // inline editing state: which cell is being edited and draft value
   const [editingCell, setEditingCell] = useState({ id: null, field: null, value: '', saving: false });
   const [searchQuery, setSearchQuery] = useState('');
+  const [showRequirements, setShowRequirements] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -110,11 +114,19 @@ const JobDescriptions = () => {
               className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
             />
             <button
-              onClick={() => navigate('/requirements')}
+              onClick={() => setShowRequirements(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
             >
               <FiFile className="mr-2" />
-              Requirement
+              ADD REQUIREMENT
+            </button>
+            <button
+              onClick={() => setChatOpen(true)}
+              className="px-4 py-2 bg-white text-gray-800 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors flex items-center"
+              title="Open AI Chat"
+            >
+              <FiMessageSquare className="mr-2" />
+              OPEN CHAT
             </button>
           </div>
         </div>
@@ -127,10 +139,6 @@ const JobDescriptions = () => {
           ) : error ? (
             <div className="p-4 bg-red-50 text-red-700 rounded-md">
               {error}
-            </div>
-          ) : requirements.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              No requirements found
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -349,6 +357,45 @@ const JobDescriptions = () => {
             dispatch(getRequirement());
           }}
         />
+      )}
+
+      {/* Requirements Popup */}
+      {showRequirements && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowRequirements(false)} />
+          <div className="relative bg-white w-full max-w-3xl md:max-w-4xl mx-4 sm:mx-6 md:mx-8 rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+            {/* Header */}
+            <div className="bg-gray-50 px-6 py-5 md:px-8 text-gray-800 flex items-center justify-between border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <FiFile className="w-5 h-5 text-gray-600" />
+                <h3 className="text-lg font-semibold">Job Requirements</h3>
+              </div>
+              <button 
+                onClick={() => setShowRequirements(false)} 
+                className="p-2 rounded-lg hover:bg-gray-200"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-6 py-6 md:px-8">
+              <Requirements onClose={() => setShowRequirements(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Sidebar (toggleable within this page) */}
+      <ChatSidebar open={chatOpen} onClose={() => setChatOpen(false)} />
+      {/* Floating toggle button near bottom-right when sidebar is closed */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed right-4 bottom-6 z-40 inline-flex items-center gap-2 px-3 py-2 rounded-full shadow-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition"
+          title="Toggle Assistant"
+        >
+          <FiMessageSquare className="w-4 h-4" />
+          <span className="text-sm hidden sm:inline">Assistant</span>
+        </button>
       )}
     </div>
   );

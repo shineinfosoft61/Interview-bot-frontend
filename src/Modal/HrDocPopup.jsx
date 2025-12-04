@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, X, Save, Link as LinkIcon, Clock, Loader2 } from 'lucide-react';
-import { updateHRDocument, getHrDocument } from '../reduxServices/actions/InterviewAction';
-import { useDispatch } from 'react-redux';
+import { updateHRDocument, getHrDocument, getRequirement } from '../reduxServices/actions/InterviewAction';
+import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 
 
-const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
+const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc, quickInterview }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     id: '',
@@ -20,6 +20,7 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
     updated_at: ''
   });
   const [saving, setSaving] = useState(false);
+  const requirements = useSelector((state) => state.InterviewReducer.requirement || []);
 
   const toDateTimeLocal = (value) => {
     if (!value) return '';
@@ -49,8 +50,23 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
       shine_link: editHrDoc.shine_link || '',
       time: toDateTimeLocal(editHrDoc.time),
       upload_doc: editHrDoc.upload_doc || '',
+      requirement: editHrDoc.requirement_id || editHrDoc.requirement || '',
+      is_quick: quickInterview
     });
   }, [editHrDoc]);
+
+  useEffect(() => {
+    // Fetch requirements when the component mounts
+    const fetchRequirements = async () => {
+      try {
+        await dispatch(getRequirement());
+      } catch (error) {
+        console.error('Error fetching requirements:', error);
+      }
+    };
+    
+    fetchRequirements();
+  }, [dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -70,6 +86,8 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
         experience: formData.experience || null,
         shine_link: formData.shine_link || null,
         time: formData.time ? new Date(formData.time).toISOString() : null,
+        requirement: formData.requirement || null,
+        is_quick : formData.is_quick
       };
       const res = await dispatch(updateHRDocument(editHrDoc.id, payload));
       if (res?.success) {
@@ -136,9 +154,27 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc }) => {
           </div>
 
           {/* Date + Time combined */}
-          <div className="md:col-span-12">
+          <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1 flex items-center gap-2"><Clock className="w-4 h-4 text-gray-500" /> Date & Time</label>
             <input type="datetime-local" name="time" value={formData.time} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+
+          {/* Requirement Dropdown */}
+          <div className="md:col-span-12">
+            <label className="block text-sm text-gray-600 mb-1">Requirement</label>
+            <select
+              name="requirement"
+              value={formData.requirement || ''}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Select Requirement</option>
+              {requirements.map((req) => (
+                <option key={req.id} value={req.id}>
+                  {req.name || `Requirement ${req.id}`}
+                </option>
+              ))}
+            </select>
           </div>
 
         </div>

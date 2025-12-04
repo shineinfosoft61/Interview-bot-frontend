@@ -4,7 +4,7 @@ import { Calendar, Upload, X, FileText, User, Mail, Phone, Briefcase, Clock, Che
 import { saveHRDocument } from '../reduxServices/actions/InterviewAction';
 import { useNavigate } from 'react-router-dom';
 
-const Resume = () => {
+const Resume = ({ onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { hrDocument } = useSelector(state => state.InterviewReducer);
@@ -103,51 +103,52 @@ const Resume = () => {
   };
 
   return (
-    <div className="min-h-screen ml-14 bg-gradient-to-br from-purple-50 to-blue-50 p-6">
-      <div className="max-w-5xl mx-auto mt-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-lg" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-3xl md:max-w-4xl mx-4 sm:mx-6 md:mx-8 rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        {/* Header */}
+        <div className="bg-gray-50 px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-800">Add New Candidate</h2>
+          </div>
+          <button 
+            onClick={onClose} 
+            className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-6 max-h-[80vh] overflow-y-auto">
 
         {/* Status Messages */}
-        <div className="space-y-4">
+        <div className="space-y-4 mb-6">
           {/* Success Message */}
           {showSuccessMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
               <div>
-                <p className="font-semibold text-green-800">Interview Scheduled Successfully!</p>
-                <p className="text-sm text-green-600">The candidate will be notified via email.</p>
+                <p className="font-medium text-green-800">Resume Uploaded Successfully!</p>
+                <p className="text-sm text-green-600">The candidate has been added to the system.</p>
               </div>
             </div>
           )}
 
           {/* Error Message */}
           {errorMessage && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3 animate-fade-in">
-              <AlertCircle className="w-6 h-6 text-red-600" />
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
               <div>
-                <p className="font-semibold text-red-800">Error</p>
+                <p className="font-medium text-red-800">Error</p>
                 <p className="text-sm text-red-600">{errorMessage}</p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Schedule Interview Form */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 relative">
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-6 h-6 text-purple-600" />
-                <h2 className="text-2xl font-bold text-gray-800">Upload Resume</h2>
-              </div>
-              <button
-                onClick={() => navigate('/candidates')}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-                aria-label="Show candidates"
-              >
-                <User className="w-4 h-4" />
-                Show Candidates
-              </button>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
 
             <form onSubmit={handleScheduleInterview} className="space-y-4">
               
@@ -168,18 +169,18 @@ const Resume = () => {
                   <p className="text-sm text-gray-600 mb-2">
                     Drag and drop resume files here, or
                   </p>
-                  <label className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg cursor-pointer transition duration-200">
+                  <label className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer transition-colors">
                     Browse Files
                     <input
                       type="file"
                       multiple
-                      accept=".pdf,.doc,.docx"
+                      accept=".pdf,.docx"
                       onChange={handleFileChange}
                       className="hidden"
                     />
                   </label>
                   <p className="text-xs text-gray-500 mt-2">
-                    Supported formats: PDF, DOC, DOCX (Multiple files allowed)
+                    Supported formats: PDF, DOCX (Multiple files allowed)
                   </p>
                 </div>
 
@@ -219,30 +220,35 @@ const Resume = () => {
               </div>
 
               {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isUploading}
-                className={`w-full font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2 ${
-                  isUploading 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-purple-600 hover:bg-purple-700 text-white'
-                }`}
-              >
-                {isUploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>Uploading...</span>
-                  </>
-                ) : (
-                  <>
-                    <Calendar className="w-5 h-5" />
-                    Schedule Interview
-                  </>
-                )}
-              </button>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploading || selectedFiles.length === 0}
+                  className={`px-6 py-2 rounded-lg text-white font-medium ${
+                    isUploading || selectedFiles.length === 0
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  } transition-colors`}
+                >
+                  {isUploading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Uploading...</span>
+                    </div>
+                  ) : 'Upload Resume'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
+          </div>
       </div>
     </div>
   );

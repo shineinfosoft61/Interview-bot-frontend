@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FiArrowLeft, FiFilter, FiClock, FiCheckCircle, FiXCircle, FiEdit2, FiPlus } from 'react-icons/fi';
+import { FiArrowLeft, FiFilter, FiClock, FiCheckCircle, FiXCircle, FiEdit2, FiPlus, FiFile } from 'react-icons/fi';
+import { FileText, X } from 'lucide-react';
 import HrDocPopup from '../Modal/HrDocPopup';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHrDocument, getRequirement, updateHRDocument } from '../reduxServices/actions/InterviewAction';
+import { getHrDocument, getRequirement, updateHRDocument, saveHRDocument } from '../reduxServices/actions/InterviewAction';
+import Resume from '../components/Resume';
 import QuestionUploadPopup from '../Modal/QuestionUploadPopup';
+import AnswerReportModal from '../Modal/AnswerReportModal';
+import DecisionConfirmPopup from '../Modal/DecisionConfirmPopup';
+
 
 const CandidateList = () => {
   const dispatch = useDispatch();
@@ -20,11 +25,18 @@ const CandidateList = () => {
   const [editHrDoc, setEditHrDoc] = useState(null);
   const [candidateRequirements, setCandidateRequirements] = useState({});
   const [showUploadPopup, setShowUploadPopup] = useState(false);
+  const [reportInterview, setReportInterview] = useState(null);
+  const [showResumePopup, setShowResumePopup] = useState(false);
+  const [confirmCandidate, setConfirmCandidate] = useState(null);
   const navigate = useNavigate();
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditHrDoc(null);
+  };
+
+  const closeReport = () => {
+    setReportInterview(null);
   };
 
   useEffect(() => {
@@ -122,7 +134,7 @@ const CandidateList = () => {
 
   return (
     <div className="min-h-screen p-4 bg-gray-50">
-      <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6 mt-3">
+      <div className="w-full mx-auto bg-white rounded-lg shadow-md p-6 mt-3" style={{ maxWidth: '77%' }}>
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <button
@@ -136,6 +148,13 @@ const CandidateList = () => {
           </div>
           
           <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowResumePopup(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+            >
+              <FiFile className="mr-2" />
+              ADD CANDIDATE
+            </button>
             {/* Search */}
             <div className="relative">
               <input
@@ -149,6 +168,7 @@ const CandidateList = () => {
                 <FiFilter />
               </span>
             </div>
+            
             {/* Status Filter */}
             <div className="relative">
               <select
@@ -179,8 +199,8 @@ const CandidateList = () => {
             No candidates found
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-[1200px] w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -203,6 +223,12 @@ const CandidateList = () => {
                   </th>
                   <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Report
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Pass/Fail
                   </th>
                 </tr>
               </thead>
@@ -246,7 +272,7 @@ const CandidateList = () => {
                         }}
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        <FiPlus className="mr-1 h-3 w-3" />
+                        <FiPlus className="mr-1 h-3 w-2" />
                         Add Questions
                       </button>
                       <button
@@ -260,6 +286,35 @@ const CandidateList = () => {
                         <FiEdit2 className="w-4 h-4" />
                       </button>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">{candidate.interview_status === "Completed" ? (
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setReportInterview(candidate)}
+                          className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-md border border-gray-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300"
+                        >
+                          <FileText className="w-4 h-4" />
+                          View Report
+                        </button>
+                      </div>
+                      ): <div>{getStatusBadge('Pending')}</div>}
+                    </td>
+                    {candidate?.is_selected === null ? (
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button
+                        onClick={() => setConfirmCandidate(candidate)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        {getStatusBadge('Pending')}
+                      </button>
+                    </td>
+                    ) : (
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md shadow-sm text-gray-700 bg-white">
+                          {getStatusBadge('Completed')}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -286,6 +341,48 @@ const CandidateList = () => {
           // Add your file upload logic here
         }}
       />
+
+      <DecisionConfirmPopup
+        isOpen={!!confirmCandidate}
+        candidate={confirmCandidate}
+        onClose={() => setConfirmCandidate(null)}
+      />
+
+      {showResumePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center space-x-2">
+                <FileText className="w-5 h-5 text-gray-600" />
+                <h2 className="text-lg font-semibold text-gray-800">Add New Candidate</h2>
+              </div>
+              <button
+                onClick={() => setShowResumePopup(false)}
+                className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 max-h-[80vh] overflow-y-auto">
+              <Resume 
+                onSuccess={() => {
+                  setShowResumePopup(false);
+                  dispatch(getHrDocument()); // Refresh the candidate list
+                }} 
+                onClose={() => setShowResumePopup(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reportInterview && (
+        <AnswerReportModal
+          interview={reportInterview}
+          onClose={closeReport}
+        />
+      )}
     </div>
   );
 };

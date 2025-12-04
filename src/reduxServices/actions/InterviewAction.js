@@ -1,5 +1,5 @@
 import axios from "axios";
-import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API,PHOTO_API, REGISTER_API } from "../api/InterviewApi";
+import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API,PHOTO_API, REGISTER_API, CHAT_API } from "../api/InterviewApi";
 import { InterviewConstant } from "../constant/InterviewConstant";
 
 
@@ -36,6 +36,10 @@ function UserDetail(data) {
   return { type: InterviewConstant.ALL_USER_DATA, data };
 }
 
+function ChatDetail(data) {
+  return { type: InterviewConstant.ALL_CHAT_DATA, data };
+}
+
 export const getQuestion = (id) => {
   return async (dispatch) => {
     try {
@@ -57,7 +61,7 @@ export const getCandidateAccess = (candidateId) => {
   return async (dispatch) => {
     try {
       // Build API URL dynamically
-      const url = `${CANDIDATE_API}${candidateId}/`;
+      const url = `${HR_API}${candidateId}/`;
       const res = await axios.get(url, {
       });
 
@@ -126,10 +130,8 @@ export const updateHRDocument = (id, data) => {
     try {
       const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
       const headers = isFormData
-        ? { "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${localStorage.getItem("token")}`}
-        : { "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`};
+        ? { "Content-Type": "multipart/form-data",}
+        : { "Content-Type": "application/json",};
 
       const response = await axios.put(`${HR_API}${id}/`, data, { headers });
 
@@ -169,7 +171,7 @@ export const updateRequirement = (id, data) => {
       console.error("Error updating Requirement:", error);
       return { success: false, error: error.message };
     }
-  };
+  };  
 };
 
 
@@ -211,10 +213,9 @@ export const getHrDocumentById = (id) => {
   return async (dispatch) => {
     try {
       const res = await axios.get(`${HR_API}${id}/`, {
-        // headers: {
-        //   "Content-Type": "application/json",
-        //   Authorization: "Bearer " + localStorage.getItem("workload-token"),
-        // },
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
       dispatch(HrDocumentDetailById(res.data));
     } catch (error) {
@@ -243,7 +244,31 @@ export const AddRegister = (data) => {
       }
     } catch (error) {
       console.error("Error adding candidate:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.response?.data?.email };
+    }
+  };
+};
+
+export const ChatApi = (data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(CHAT_API, data, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data) {
+        dispatch(ChatDetail(response.data));
+        console.log("chat added successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error adding chat:", error);
+      return { success: false, error: error.response?.data?.email };
     }
   };
 };
@@ -350,7 +375,8 @@ export const saveRequirement = (formData) => {
     try {
       const response = await axios.post(REQUIREMENT_API, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -419,8 +445,6 @@ export const updateproject = (id, data) => {
 
 
 export const PdfDataAction = {
-  // loginHandler,
-  // userDetailsHandler,
   AddRegister,
   addCandidate,
   getQuestion,
@@ -436,5 +460,6 @@ export const PdfDataAction = {
   updateRequirement,
   saveQuestion,
   getUserList,
-  updateUser
+  updateUser,
+  ChatApi,
 };
