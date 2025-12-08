@@ -4,7 +4,7 @@ import { Calendar, Upload, X, FileText, User, Mail, Phone, Briefcase, Clock, Che
 import { saveHRDocument } from '../reduxServices/actions/InterviewAction';
 import { useNavigate } from 'react-router-dom';
 
-const Resume = ({ onClose }) => {
+const Resume = ({ onClose, onSuccess }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { hrDocument } = useSelector(state => state.InterviewReducer);
@@ -79,7 +79,11 @@ const Resume = ({ onClose }) => {
         setShowSuccessMessage(true);
         setTimeout(() => {
           setShowSuccessMessage(false);
-          navigate('/candidates');
+          if (onSuccess) {
+            onSuccess();
+          } else {
+            onClose();
+          }
         }, 2000);
       } else {
         setErrorMessage(result.error || 'Failed to upload documents. Please try again.');

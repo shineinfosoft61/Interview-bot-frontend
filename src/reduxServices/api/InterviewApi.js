@@ -9,6 +9,7 @@ export const HR_API = API_URL + "/hr/";
 export const PHOTO_API = API_URL + "/photo/"; 
 export const REQUIREMENT_API = API_URL + "/requirement/";
 export const REGISTER_API = API_URL + "/register/";
-export const CHAT_API = API_URL + "/chat/"; 
+export const CHAT_API = API_URL + "/chat/";
+export const JD_ASSISTANT_API = API_URL + "/jd-assistant/"; 
 
 

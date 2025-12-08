@@ -92,7 +92,7 @@ const JobDescriptions = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
+    <div className="min-h-screen ml-60 p-4 bg-gray-50">
       <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
@@ -152,7 +152,7 @@ const JobDescriptions = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notice Period</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10 border-l border-gray-200">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -323,7 +323,7 @@ const JobDescriptions = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {req.created_at ? format(new Date(req.created_at), 'MMM d, yyyy') : 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10 border-l border-gray-200">
                         <button
                           onClick={() => setEditingRequirement(req)}
                           className="text-blue-600 hover:text-blue-900 mr-4"

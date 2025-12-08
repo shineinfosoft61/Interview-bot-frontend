@@ -103,6 +103,7 @@ const CandidateList = () => {
         candidate.email,
         candidate.technology,
         candidate.phone,
+        candidate.interview_status,
       ].map(v => (v || '').toString().toLowerCase());
       return fields.some(f => f.includes(q));
     });
@@ -133,8 +134,8 @@ const CandidateList = () => {
   };
 
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
-      <div className="w-full mx-auto bg-white rounded-lg shadow-md p-6 mt-3" style={{ maxWidth: '77%' }}>
+    <div className="min-h-screen ml-60 p-4 bg-gray-50">
+      <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">
             <button
@@ -147,7 +148,14 @@ const CandidateList = () => {
             <h1 className="text-2xl font-bold text-gray-800">Candidates</h1>
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, email, technology, phone"
+              className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+            />
             <button
               onClick={() => setShowResumePopup(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
@@ -155,19 +163,6 @@ const CandidateList = () => {
               <FiFile className="mr-2" />
               ADD CANDIDATE
             </button>
-            {/* Search */}
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by name, phone"
-                className="bg-white border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-              />
-              <span className="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-                <FiFilter />
-              </span>
-            </div>
             
             {/* Status Filter */}
             <div className="relative">
@@ -187,53 +182,51 @@ const CandidateList = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading candidates...</p>
           </div>
         ) : error ? (
           <div className="p-4 bg-red-50 text-red-700 rounded-md">
             {error}
           </div>
-        ) : filteredCandidates.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            No candidates found
-          </div>
         ) : (
-          <div className="overflow-x-auto w-full">
-            <table className="min-w-[1200px] w-full divide-y divide-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Name
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Technology
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Phone
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Requirement
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Report
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Pass/Fail
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10 border-l border-gray-200">
+                    Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCandidates.map((candidate, index) => (
+                {filteredCandidates.length > 0 ? (
+                  filteredCandidates.map((candidate, index) => (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {candidate.name || 'N/A'}
@@ -264,30 +257,8 @@ const CandidateList = () => {
                         ))}
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => {
-                          setEditHrDoc(candidate);
-                          setShowUploadPopup(true);
-                        }}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        <FiPlus className="mr-1 h-3 w-2" />
-                        Add Questions
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditHrDoc(candidate);
-                          setIsModalOpen(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
-                        title="Edit Candidate"
-                      >
-                        <FiEdit2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">{candidate.interview_status === "Completed" ? (
-                      <div className="pt-2">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {candidate.interview_status === "Completed" ? (
                         <button
                           type="button"
                           onClick={() => setReportInterview(candidate)}
@@ -296,27 +267,66 @@ const CandidateList = () => {
                           <FileText className="w-4 h-4" />
                           View Report
                         </button>
-                      </div>
-                      ): <div>{getStatusBadge('Pending')}</div>}
+                      ) : (
+                        <span className="text-gray-400 text-xs">No report available</span>
+                      )}
                     </td>
                     {candidate?.is_selected === null ? (
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => setConfirmCandidate(candidate)}
                         className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
-                        {getStatusBadge('Pending')}
+                        Confirm Decision
                       </button>
                     </td>
                     ) : (
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md shadow-sm text-gray-700 bg-white">
-                          {getStatusBadge('Completed')}
-                        </div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <span className={`inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md shadow-sm ${
+                          candidate.is_selected ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'
+                        }`}>
+                          {candidate.is_selected ? 'Passed' : 'Failed'}
+                        </span>
                       </td>
                     )}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10 border-l border-gray-200">
+                      <div className="flex items-center gap-2 min-w-[120px]">
+                        {candidate.interview_status !== "Completed" && (
+                          <button
+                            onClick={() => {
+                              setEditHrDoc(candidate);
+                              setShowUploadPopup(true);
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          >
+                            <FiPlus className="mr-1 h-3 w-2" />
+                            Add Questions
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setEditHrDoc(candidate);
+                            setIsModalOpen(true);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            candidate.interview_status === "Completed" 
+                              ? "text-blue-600 hover:bg-blue-50 border border-blue-200" 
+                              : "text-blue-600 hover:text-blue-900"
+                          }`}
+                          title="Edit Candidate"
+                        >
+                          <FiEdit2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                ))}
+                ))) : (
+                  <tr>
+                    <td colSpan="9" className="px-6 py-4 text-center text-sm text-gray-500">
+                      No candidates found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

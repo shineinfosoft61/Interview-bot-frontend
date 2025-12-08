@@ -59,7 +59,7 @@ const SheduleList = () => {
   
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-100 p-6">
+    <div className="min-h-screen ml-60 bg-gradient-to-br from-green-50 to-teal-100 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">

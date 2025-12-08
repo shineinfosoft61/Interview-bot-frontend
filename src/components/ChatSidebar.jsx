@@ -1,26 +1,214 @@
-import React, { useState } from 'react';
-import { X, MessageSquare, ChevronDown, Sparkles } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { ChatApi } from '../reduxServices/actions/InterviewAction';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useRef } from 'react';
+import { X, MessageSquare, Sparkles, Send, Save, Copy, Download, FileText, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { Document, Packer, Paragraph, TextRun } from 'docx';
+import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
 
 
 const ChatSidebar = ({ open, onClose }) => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const textareaRef = useRef(null);
+  
+  // State variables
   const [message, setMessage] = useState('');
-  const { chat } = useSelector(state => state.InterviewReducer);
-  console.log('chat-----------------', chat);
+  const [messages, setMessages] = useState([]);
+  const [currentFields, setCurrentFields] = useState({});
+  const [missingFields, setMissingFields] = useState([]);
+  const [generatedJD, setGeneratedJD] = useState(null);
+  const [status, setStatus] = useState('idle'); // idle | awaiting_analysis | awaiting_generation | editing_jd
+  const [isLoading, setIsLoading] = useState(false);
+  const [originalMessage, setOriginalMessage] = useState(''); // Store original user message
 
-  const handleSubmit = async () => {
-    if (!message || !message.trim()) return;
-    const payload = {
-        question: message.trim(),
-    };
-    const result = await dispatch(ChatApi(payload));
-    if (result?.success && result?.data) {
-    }
+  // Handle sending message
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading) return;
+    
+    const userMessage = message.trim();
     setMessage('');
+    setOriginalMessage(userMessage); // Store original message
+    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setStatus('awaiting_analysis');
+    setIsLoading(true);
+
+    try {
+      // Call analyze API
+      const response = await fetch('/jd-assistant/analyze/', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ message: userMessage })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status === 'need_more_info') {
+        setMessages(prev => [...prev, { role: 'assistant', text: data.message }]);
+        setMissingFields(data.missing_fields || []);
+        setCurrentFields(data.fields || {});
+        setStatus('editing_jd');
+      } else if (data.status === 'ready') {
+        setMessages(prev => [...prev, { role: 'assistant', text: 'Generating your job description...' }]);
+        await generateJD(userMessage, data);
+      }
+    } catch (error) {
+      toast.error('Failed to analyze request. Please try again.');
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I encountered an error. Please try again.' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate JD
+  const generateJD = async (originalMessage, analysisData) => {
+    setStatus('awaiting_generation');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/jd-assistant/generate/', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ 
+          message: originalMessage,
+          analysis_data: analysisData 
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.jd_text) {
+        setGeneratedJD(data.jd_text);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          text: 'I\'ve generated your job description. You can edit it below and use the action buttons to save, copy, or download it.' 
+        }]);
+        setStatus('editing_jd');
+      }
+    } catch (error) {
+      toast.error('Failed to generate JD. Please try again.');
+      setMessages(prev => [...prev, { role: 'assistant', text: 'Sorry, I encountered an error while generating the job description.' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle form submission for missing fields
+  const handleFormSubmit = async (formData) => {
+    setIsLoading(true);
+    await generateJD(originalMessage, { ...formData, status: 'ready' }); // Use stored original message
+    // Close form after submission
+    setMissingFields([]);
+  };
+
+  // Handle form close
+  const handleCloseForm = () => {
+    setMissingFields([]);
+    setCurrentFields({});
+    setStatus('idle');
+  };
+
+  // Save JD
+  const handleSaveJD = async () => {
+    if (!generatedJD) return;
+    
+    try {
+      const response = await fetch('/jd-assistant/save/', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ jd_text: generatedJD })
+      });
+      
+      if (response.ok) {
+        toast.success('Job description saved successfully!');
+      } else {
+        toast.error('Failed to save job description.');
+      }
+    } catch (error) {
+      toast.error('Failed to save job description.');
+    }
+  };
+
+
+  // Copy JD
+  const handleCopyJD = () => {
+    if (generatedJD) {
+      navigator.clipboard.writeText(generatedJD);
+      toast.success('Job description copied to clipboard!');
+    }
+  };
+
+  // Download as DOCX
+  const handleDownloadDOCX = async () => {
+    if (!generatedJD) return;
+    
+    try {
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: generatedJD.split('\n').map(line => 
+            new Paragraph({
+              children: [new TextRun({ text: line || ' ', size: 24 })],
+            })
+          ),
+        }],
+      });
+
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, 'job-description.docx');
+      toast.success('DOCX downloaded successfully!');
+    } catch (error) {
+      console.error('DOCX error:', error);
+      toast.error('Failed to download DOCX.');
+    }
+  };
+
+  // Download as PDF
+  const handleDownloadPDF = () => {
+    if (!generatedJD) return;
+    
+    try {
+      const doc = new jsPDF();
+      const pageHeight = doc.internal.pageSize.height;
+      const margin = 15;
+      const lineHeight = 7;
+      const maxLineWidth = 180;
+      
+      // Split text into lines
+      const lines = doc.splitTextToSize(generatedJD, maxLineWidth);
+      let yPosition = margin;
+      
+      lines.forEach((line, index) => {
+        // Check if we need a new page
+        if (yPosition + lineHeight > pageHeight - margin) {
+          doc.addPage();
+          yPosition = margin;
+        }
+        
+        doc.text(line, margin, yPosition);
+        yPosition += lineHeight;
+      });
+      
+      doc.save('job-description.pdf');
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('PDF error:', error);
+      toast.error('Failed to download PDF.');
+    }
+  };
+
+  // Handle Enter key
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
@@ -49,70 +237,274 @@ const ChatSidebar = ({ open, onClose }) => {
             <X className="w-5 h-5" />
           </button>
         </div>
+        
         <div className="h-[calc(100%-56px)] flex flex-col">
-          {/* Scrollable content area */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {!chat? (
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
-                <h2 className="text-xl font-semibold text-gray-800">What can I help you do?</h2>
+                <div className="text-center">
+                  <Sparkles className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                  <h2 className="text-lg font-semibold text-gray-800 mb-1">What can I help you do?</h2>
+                  <p className="text-sm text-gray-600">I can help you create professional job descriptions</p>
+                </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                {(Array.isArray(chat) ? chat : []).map((item, idx) => {
-                const q = item?.data?.question;
-                const r = item?.data?.response;
-
-                return (
-                    <div key={idx} className="space-y-2">
-                    {q && (
-                        <div className="flex justify-end">
-                        <div className="max-w-[90%] rounded-2xl px-4 py-2 bg-gray-100 text-black whitespace-pre-wrap break-words">
-                            {q}
-                        </div>
-                        </div>
-                    )}
-
-                    {r && (
-                        <div className="flex justify-start">
-                        <div className="max-w-[90%] rounded-2xl px-4 py-2 text-gray-800 whitespace-pre-wrap break-words border border-gray-200">
-                            {r}
-                        </div>
-                        </div>
-                    )}
-                    </div>
-                );
-                })}
+              messages.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[90%] rounded-2xl px-4 py-3 ${
+                    msg.role === 'user' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-gray-100 text-gray-800 border border-gray-200'
+                  }`}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))
+            )}
+            
+            {/* Loading indicator */}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 rounded-2xl px-4 py-3 border border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm text-gray-600">
+                      {status === 'awaiting_analysis' ? 'Analyzing your request...' : 'Generating job description...'}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
 
-          {/* Bottom input area */}
+          {/* Conditional Mini Form */}
+          {missingFields.length > 0 && status === 'editing_jd' && (
+            <div className="p-4">
+              <MiniForm 
+                fields={missingFields} 
+                currentFields={currentFields}
+                missingFields={missingFields}
+                onSubmit={handleFormSubmit}
+                isLoading={isLoading}
+                onClose={handleCloseForm}
+              />
+            </div>
+          )}
+
+          {/* JD Editor */}
+          {generatedJD && status === 'editing_jd' && (
+            <div className="border-t bg-gray-50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Generated Job Description</h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveJD}
+                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                  >
+                    <Save className="w-3 h-3" />
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCopyJD}
+                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Copy
+                  </button>
+                  <button
+                    onClick={handleDownloadDOCX}
+                    className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
+                  >
+                    <Download className="w-3 h-3" />
+                    DOCX
+                  </button>
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                  >
+                    <FileText className="w-3 h-3" />
+                    PDF
+                  </button>
+                </div>
+              </div>
+              <textarea
+                value={generatedJD}
+                onChange={(e) => setGeneratedJD(e.target.value)}
+                className="w-full h-32 p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Generated job description will appear here..."
+              />
+            </div>
+          )}
+
+          {/* Input Area */}
           <div className="border-t p-3">
             <div className="rounded-2xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
               <textarea
+                ref={textareaRef}
                 rows={3}
                 placeholder="What can I help you do?"
                 className="w-full resize-none rounded-2xl px-4 py-3 outline-none text-gray-800 placeholder:text-gray-400"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={isLoading}
               />
               <div className="flex items-center justify-end gap-2 px-3 py-2">
                 <button
                   type="button"
-                  className="text-[11px] text-gray-600 border rounded-full px-3 py-1 bg-white shadow-sm hover:bg-gray-50 active:bg-gray-100"
-                  onClick={handleSubmit}
+                  className="text-[11px] text-white bg-blue-500 rounded-full px-4 py-2 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || isLoading}
                 >
-                  Send
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3 h-3" />
+                      Send
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </div>
         </div>
       </aside>
-
-      {/* Floating toggle button (shows when closed as an example usage) */}
-      {/* You can control visibility from parent. Here we keep it simple. */}
     </>
+  );
+};
+
+// Mini Form Component
+const MiniForm = ({ fields, currentFields, missingFields, onSubmit, isLoading, onClose }) => {
+  const [formData, setFormData] = useState({});
+  const [validationTriggered, setValidationTriggered] = useState(false);
+
+  // All possible fields (fixed schema)
+  const ALL_FIELDS = ["name", "experience", "technology", "No_of_openings", "notice_period", "priority"];
+  
+  // Only experience and technology are required (name is optional since system suggests JD name)
+  const REQUIRED_FIELDS = ["experience", "technology"];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Check if required fields are filled
+    const missingRequired = REQUIRED_FIELDS.filter(field => {
+      const value = formData[field] || currentFields[field] || '';
+      return !value.trim();
+    });
+    
+    if (missingRequired.length > 0) {
+      setValidationTriggered(true);
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    onSubmit({ ...currentFields, ...formData });
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-lg font-semibold text-gray-900">Additional Information</h4>
+          <p className="text-sm text-gray-600 mt-1">Please provide the following details to generate your job description</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          title="Close form"
+        >
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 gap-4">
+          {ALL_FIELDS.map(field => {
+            const isRequired = REQUIRED_FIELDS.includes(field);
+            const currentValue = formData[field] || currentFields[field] || '';
+            const showError = validationTriggered && isRequired && !currentValue.trim();
+            
+            return (
+              <div key={field} className="relative">
+                <div className="relative">
+                  <input
+                    type="text"
+                    id={`field-${field}`}
+                    className={`w-full px-4 py-3 border rounded-lg text-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 peer ${
+                      showError 
+                        ? 'border-red-300 bg-red-50' 
+                        : currentValue.trim()
+                          ? 'border-gray-300 bg-white'
+                          : 'border-gray-300 bg-white'
+                    }`}
+                    placeholder=" "
+                    value={currentValue}
+                    onChange={(e) => handleInputChange(field, e.target.value)}
+                    disabled={isLoading}
+                  />
+                  <label
+                    htmlFor={`field-${field}`}
+                    className={`absolute left-4 transition-all duration-200 pointer-events-none ${
+                      currentValue.trim()
+                        ? 'text-xs text-blue-600 -top-2 bg-white px-1'
+                        : 'text-sm text-gray-500 top-3'
+                    }`}
+                  >
+                    {field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {isRequired && <span className="text-red-500 ml-1">*</span>}
+                  </label>
+                </div>
+                {showError && (
+                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                    <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                    This field is required
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin inline mr-2" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 inline mr-2" />
+                Generate JD
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

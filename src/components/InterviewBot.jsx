@@ -10,6 +10,7 @@ import InterviewInProgress from './InterviewInProgress';
 import { saveAnswer } from '../reduxServices/actions/InterviewAction';
 import { useParams } from 'react-router-dom';
 import { getHrDocument, updateHRDocument } from '../reduxServices/actions/InterviewAction';
+import { toast } from 'react-toastify';
 
 
 const InterviewBot = () => {
@@ -31,7 +32,14 @@ const InterviewBot = () => {
   const lastSwitchAtRef = useRef(0);
   const stopCameraRef = useRef(null);
 
-  const totalQuestions = 10;
+  // Dynamic total questions based on actual questions from API
+  // Use a default of 1 to avoid division by zero issues
+  const totalQuestions = Math.max(questions.length, 1);
+  
+  // Calculate progress percentage safely
+  const progressPercentage = totalQuestions > 0 
+    ? ((currentQuestionIndex + 1) / totalQuestions) * 100 
+    : 0;
   
   const speechSynthesisRef = useRef(null);
   
@@ -75,7 +83,7 @@ const InterviewBot = () => {
     if (isOnboardingComplete) {
       fetchNewQuestion();
     }
-  }, [dispatch, isOnboardingComplete]);
+  }, [dispatch, isOnboardingComplete, id]); // Added id to dependency array
 
   const fetchNewQuestion = async () => {
     setQuestionsLoading(true);
@@ -95,7 +103,7 @@ const InterviewBot = () => {
     if (questions[clampedIndex]) {
       setCurrentQuestion(questions[clampedIndex]);
     }
-  }, [questions, currentQuestionIndex]);
+  }, [questions, currentQuestionIndex, questions.length]);
 
   // Start timer and speak when the currentQuestion changes while interview is in progress
   useEffect(() => {
@@ -216,15 +224,8 @@ const InterviewBot = () => {
       return; // We already have the next question in memory
     }
 
-    // If we have exhausted pre-fetched questions but interview isn't over, fetch more
-    if (currentQuestionIndex < totalQuestions - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      resetTranscript();
-      stopRecording();
-      setMicEnabled(false);
-      await fetchNewQuestion();
-      return;
-    } else {
+    // Check if we've reached the end of available questions
+    if (currentQuestionIndex >= questions.length - 1) {
       // Turn off camera before completing interview
       try {
         if (typeof stopCameraRef.current === 'function') {
@@ -238,19 +239,18 @@ const InterviewBot = () => {
       setMicEnabled(false);
       stopTimer();
 
-        const payload = {
-          interview_status: "Completed",
-          interview_closed: true,
-          tab_count: tabSwitchesRef.current,
-        };
-        const res = await dispatch(updateHRDocument(id, payload));
-        if (res?.success) {
-          toast.success('Interview updated successfully');
-          dispatch(getHrDocument());
-        } else {
-          toast.error(res?.error || 'Failed to update interview');
-        }
-            
+      const payload = {
+        interview_status: "Completed",
+        interview_closed: true,
+        tab_count: tabSwitchesRef.current,
+      };
+      const res = await dispatch(updateHRDocument(id, payload));
+      if (res?.success) {
+        toast.success('Interview updated successfully');
+      } else {
+        toast.error(res?.error || 'Failed to update interview');
+      }
+      return;
     }
   };
 
@@ -311,9 +311,6 @@ const InterviewBot = () => {
         speechEnabled={speechEnabled}
         setSpeechEnabled={setSpeechEnabled}
         startInterview={startInterview}
-        totalQuestions={totalQuestions}
-        userData={userData}
-        resetToOnboarding={resetToOnboarding}
       />
     );
   }
@@ -334,6 +331,7 @@ const InterviewBot = () => {
       currentQuestion={currentQuestion}
       currentQuestionIndex={currentQuestionIndex}
       totalQuestions={totalQuestions}
+      progressPercentage={progressPercentage}
       timeLeft={timeLeft}
       isRecording={isRecording}
       isListening={isListening}
