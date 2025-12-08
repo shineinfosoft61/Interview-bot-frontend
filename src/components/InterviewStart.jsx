@@ -1,15 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Play, User, Edit, MicOff, CheckCircle, XCircle, Volume2 } from 'lucide-react';
+import { Mic, Play, Volume2, CheckCircle, XCircle, MicOff } from 'lucide-react';
 
 const InterviewStart = ({ 
   currentQuestion, 
   questionsLoading, 
   speechEnabled, 
   setSpeechEnabled, 
-  startInterview, 
-  totalQuestions,
-  userData,
-  resetToOnboarding
+  startInterview
 }) => {
   // Mic test states
   const [micTestState, setMicTestState] = useState('idle'); // idle, testing, success, failed
@@ -77,36 +74,6 @@ const InterviewStart = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-        {/* User Profile Section */}
-        {/* {userData && (
-          <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-800">Candidate Profile</h3>
-              <button
-                onClick={resetToOnboarding}
-                className="text-purple-600 hover:text-purple-800 p-1"
-                title="Edit Profile"
-              >
-                <Edit className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="flex items-center gap-4">
-              {userData.photoPreview && (
-                <img 
-                  src={userData.photoPreview} 
-                  alt="Profile" 
-                  className="w-16 h-16 rounded-full object-cover border-2 border-purple-200"
-                />
-              )}
-              <div className="text-left flex-1">
-                <p className="font-medium text-gray-800">{userData.name}</p>
-                <p className="text-sm text-purple-600">{userData.technology}</p>
-                <p className="text-xs text-gray-600">{userData.experience}</p>
-              </div>
-            </div>
-          </div>
-        )} */}
-
         <div className="mb-6">
           <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Mic className="w-10 h-10 text-blue-600" />
@@ -240,7 +207,7 @@ const InterviewStart = ({
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2"
             >
               <Play className="w-5 h-5" />
-              Start Interview ({totalQuestions} Questions)
+              Start Interview
             </button>
           </div>
         )}

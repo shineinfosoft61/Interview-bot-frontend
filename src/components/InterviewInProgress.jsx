@@ -8,6 +8,7 @@ const InterviewInProgress = ({
   currentQuestion,
   currentQuestionIndex,
   totalQuestions,
+  progressPercentage,
   timeLeft,
   isRecording,
   isListening,
@@ -253,7 +254,7 @@ const InterviewInProgress = ({
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%` }}
+                style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
           </div>
@@ -345,7 +346,7 @@ const InterviewInProgress = ({
               disabled={!currentQuestion}
               className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-2 px-6 rounded-lg transition duration-200 flex items-center gap-2"
             >
-              {currentQuestionIndex === totalQuestions - 1 ? 'Finish Interview' : 'Next Question'}
+              {currentQuestionIndex >= totalQuestions - 1 ? 'Finish Interview' : 'Next Question'}
               <SkipForward className="w-4 h-4" />
             </button>
           </div>

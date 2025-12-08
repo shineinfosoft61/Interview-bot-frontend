@@ -42,13 +42,42 @@ const DecisionConfirmPopup = ({ isOpen, candidate, onClose }) => {
     }
   };
 
+  const answers = Array.isArray(candidate.answers) ? candidate.answers : [];
+
+  const calculateScore = (answersList) => {
+    if (!answersList || answersList.length === 0) return null;
+    const totalRating = answersList.reduce(
+      (sum, a) => sum + (a.rating || 0),
+      0
+    );
+    const maxScore = answersList.length * 10; // rating out of 10
+    if (!maxScore) return null;
+    return (totalRating / maxScore) * 100;
+  };
+
+  const rawTotalScore = calculateScore(answers);
   const totalScore =
-    candidate.total_score ?? candidate.totalScore ?? candidate.score ?? 'N/A';
+    rawTotalScore != null
+      ? Math.round(rawTotalScore)
+      : candidate.total_score ?? candidate.totalScore ?? candidate.score ?? 'N/A';
+
+  const communication = candidate.communication || null;
+  const rawCommScore =
+    communication &&
+    typeof communication.Grammar === 'number' &&
+    typeof communication.ProfessionalLanguage === 'number'
+      ? Math.round(
+          ((communication.Grammar + communication.ProfessionalLanguage) / 2) * 10
+        )
+      : null;
+
   const communicationScore =
-    candidate.total_communication_score ??
-    candidate.communicationScore ??
-    candidate.comm_score ??
-    'N/A';
+    rawCommScore != null
+      ? rawCommScore
+      : candidate.total_communication_score ??
+        candidate.communicationScore ??
+        candidate.comm_score ??
+        'N/A';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">

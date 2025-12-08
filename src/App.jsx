@@ -49,7 +49,6 @@ const InterviewBotWrapper = () => {
 
 // Inner content that can use hooks like useLocation (inside Router)
 function AppContent() {
-  const [isOpen, setIsOpen] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
   const location = useLocation();
   const navigate = useNavigate();
@@ -67,7 +66,7 @@ function AppContent() {
 
   return (
     <>
-      {isAuthenticated && <NavbarComponent isOpen={isOpen} setIsOpen={setIsOpen}/>} 
+      {isAuthenticated && <NavbarComponent />} 
       <Routes>
         {isAuthenticated ? (
           <>

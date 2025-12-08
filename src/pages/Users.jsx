@@ -29,7 +29,7 @@ const Users = () => {
   }, [dispatch]);
 
   return (
-    <div className="min-h-screen p-4 bg-gray-50">
+    <div className="min-h-screen ml-60 p-4 bg-gray-50">
       <div className="w-full max-w-7xl mx-auto bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center">

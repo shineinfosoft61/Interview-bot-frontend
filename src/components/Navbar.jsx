@@ -13,8 +13,6 @@ const Icon = ({ path, className = 'w-5 h-5' }) => (
 const NavbarComponent = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(true);
-  const toggleSidebar = () => setIsOpen((v) => !v);
   const { logoutUser, user } = useContext(AuthContext);
   const userName = user?.name || user?.username || 'User';
   const userRole = user?.role || 'Normal';
@@ -46,79 +44,18 @@ const NavbarComponent = () => {
 
   return (
     <div className='border-2 absolute'>
-      {/* Mobile hamburger */}
-      <button
-        type="button"
-        onClick={toggleSidebar}
-        className="fixed top-4 left-4 z-50 rounded-md p-2 bg-gray-900 text-gray-200 shadow border border-gray-800"
-        aria-label="Toggle sidebar"
-      >
-        <span className="block w-5 h-[2px] bg-gray-200 mb-1"></span>
-        <span className="block w-5 h-[2px] bg-gray-200 mb-1"></span>
-        <span className="block w-5 h-[2px] bg-gray-200"></span>
-      </button>
-
-      {/* Overlay on mobile */}
-      <div
-        onClick={() => setIsOpen(false)}
-        className={`md:hidden fixed inset-0 bg-black/50 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-      />
-
-      {/* Persistent desktop toggle at sidebar edge */}
-      <button
-        type="button"
-        onClick={toggleSidebar}
-        className="hidden md:flex fixed z-50 top-1/2 -translate-y-1/2 p-2 rounded-full bg-gray-900 text-gray-200 border border-gray-800 shadow hover:bg-white/5"
-        style={{ left: isOpen ? '18rem' : '4rem' }}
-        aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        aria-pressed={isOpen}
-      >
-        {isOpen ? (
-          <Icon path="M15.75 19.5L8.25 12l7.5-7.5" />
-        ) : (
-          <Icon path="M8.25 4.5L15.75 12l-7.5 7.5" />
-        )}
-      </button>
-
-      {/* Edge hotspot to expand when collapsed (desktop) */}
-      <div
-        className="hidden md:block fixed top-0 left-0 h-screen w-6 z-40 cursor-ew-resize hover:bg-white/5"
-        onClick={() => !isOpen && setIsOpen(true)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (!isOpen && (e.key === 'Enter' || e.key === ' ')) setIsOpen(true); }}
-        aria-label="Expand sidebar"
-        aria-hidden={false}
-      />
-
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-30 h-screen transition-[width,transform] duration-300 ease-in-out relative
-          bg-[#0f1115] text-gray-200 border-r border-gray-800 shadow-xl
-          ${isOpen ? 'w-60 translate-x-0' : 'w-16 -translate-x-0'} md:translate-x-0`}
+        className="fixed top-0 left-0 z-30 h-screen w-60 bg-[#0f1115] text-gray-200 border-r border-gray-800 shadow-xl"
       >
         {/* Header / Brand */}
-        <div className="h-16 px-3 flex items-center justify-between border-b border-gray-800/60">
+        <div className="h-16 px-3 flex items-center border-b border-gray-800/60">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">UI</div>
-            <div className={`${isOpen ? 'block' : 'hidden md:hidden'}`}>
+            <div>
               <div className="text-sm font-semibold tracking-wide">Interview Bot</div>
             </div>
-
-        {/* Internal edge toggle (desktop) */}
-        <div className="hidden md:block absolute top-1/2 -translate-y-1/2 -right-3 z-40">
-          <button onClick={toggleSidebar} className="p-2 rounded-full bg-gray-900 text-gray-200 border border-gray-800 shadow hover:bg-white/5">
-            {isOpen ? (
-              <Icon path="M15.75 19.5L8.25 12l7.5-7.5" />
-            ) : (
-              <Icon path="M8.25 4.5L15.75 12l-7.5 7.5" />
-            )}
-          </button>
-        </div>
           </div>
-          <button onClick={toggleSidebar} className="md:inline-flex p-2 rounded hover:bg-white/5">
-            <Icon path="M4 6h16M4 12h16M4 18h16" />
-          </button>
         </div>
 
         {/* Navigation */}
@@ -129,10 +66,10 @@ const NavbarComponent = () => {
               to={item.to}
               className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors mb-1
                 ${isActive(item.to) ? 'bg-blue-600/20 text-blue-400' : 'hover:bg-white/5 text-gray-300'}`}
-              title={!isOpen ? item.label : undefined}
+              title={item.label}
             >
               <span className="w-5 h-5 flex items-center justify-center text-gray-300">{item.icon}</span>
-              <span className={`whitespace-nowrap ${isOpen ? 'opacity-100' : 'opacity-0 md:opacity-0'} transition-opacity`}>{item.label}</span>
+              <span className="whitespace-nowrap">{item.label}</span>
             </Link>
           ))}
         </nav>       
@@ -145,7 +82,7 @@ const NavbarComponent = () => {
                 <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 text-white flex items-center justify-center text-sm font-semibold">
                   {initial}
                 </div>
-                <div className={`${isOpen ? 'block' : 'hidden md:hidden'} min-w-0`}>
+                <div className="min-w-0">
                   <div className="text-sm font-medium text-gray-100 truncate">{userName}</div>
                   <div className="text-xs text-gray-400 truncate">{userRole}</div>
                 </div>
@@ -165,7 +102,7 @@ const NavbarComponent = () => {
       <div
         aria-hidden
         className="hidden md:block md:float-left"
-        style={{ width: isOpen ? '18rem' : '4rem', height: 0 }}
+        style={{ width: '15rem', height: 0 }}
       />
     </div>
   );

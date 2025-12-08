@@ -102,7 +102,7 @@ const HRControl = () => {
   };
 
   return (
-    <div className="min-h-screen ml-14 bg-gradient-to-br from-purple-50 to-blue-50 p-6">
+    <div className="min-h-screen ml-60 bg-gradient-to-br from-purple-50 to-blue-50 p-6">
       <div className="max-w-5xl mx-auto mt-16">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
