@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FiArrowLeft, FiEdit2, FiFile, FiX, FiMessageSquare } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2, FiFile, FiX, FiMessageSquare, FiTrash2, FiLoader } from 'react-icons/fi';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { getRequirement, updateRequirement } from '../reduxServices/actions/InterviewAction';
+import { getRequirement, updateRequirement, deleteRequirement, getEnums } from '../reduxServices/actions/InterviewAction';
 import EditRequirementPopup from '../Modal/EditRequirementPopup';
+import DeleteConfirmPopup from '../Modal/DeleteConfirmPopup';
+import CustomDropdown from '../components/CustomDropdown';
 import { toast } from 'react-toastify';
 import Requirements from '../components/Requirements';
 import ChatSidebar from '../components/ChatSidebar';
@@ -15,9 +17,11 @@ const JobDescriptions = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingRequirement, setEditingRequirement] = useState(null);
+  const [deletingRequirement, setDeletingRequirement] = useState(null);
   // inline editing state: which cell is being edited and draft value
   const [editingCell, setEditingCell] = useState({ id: null, field: null, value: '', saving: false });
   const [searchQuery, setSearchQuery] = useState('');
+  const [technologyOptions, setTechnologyOptions] = useState([]);
   const [showRequirements, setShowRequirements] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const navigate = useNavigate();
@@ -37,9 +41,44 @@ const JobDescriptions = () => {
     fetchRequirements();
   }, [dispatch]);
 
+  useEffect(() => {
+    const fetchTechnologyOptions = async () => {
+      try {
+        const enumsResult = await dispatch(getEnums());
+        if (enumsResult?.success && enumsResult.data?.technologies) {
+          setTechnologyOptions(enumsResult.data.technologies);
+        }
+      } catch (err) {
+        console.error('Error fetching technology options:', err);
+      }
+    };
+    
+    fetchTechnologyOptions();
+  }, [dispatch]);
+
   const startEdit = (req, field) => {
     if (!req || !field) return;
-    setEditingCell({ id: req.id, field, value: req[field] ?? '', saving: false });
+    let value = req[field] ?? '';
+    
+    // For technology field, convert to proper format
+    if (field === 'technology') {
+      if (Array.isArray(req.technology)) {
+        value = req.technology.map(t => 
+          typeof t === 'string' 
+            ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
+            : t
+        );
+      } else if (req.technology) {
+        value = [typeof req.technology === 'string' 
+          ? technologyOptions.find(opt => opt.value === req.technology) || { value: req.technology, label: req.technology }
+          : req.technology
+        ];
+      } else {
+        value = [];
+      }
+    }
+    
+    setEditingCell({ id: req.id, field, value, saving: false });
   };
 
   const cancelEdit = () => {
@@ -51,7 +90,16 @@ const JobDescriptions = () => {
     if (!id || !field) return cancelEdit();
     setEditingCell((s) => ({ ...s, saving: true }));
     try {
-      const payload = { [field]: value };
+      let payload;
+      if (field === 'technology') {
+        // For technology, send array of values
+        payload = {
+          technology: value.map(t => t.value)
+        };
+      } else {
+        // For other fields, send the value directly
+        payload = { [field]: value };
+      }
       const result = await dispatch(updateRequirement(id, payload));
       if (result?.success) {
         toast.success('Updated');
@@ -88,6 +136,28 @@ const JobDescriptions = () => {
       }
     } catch (e) {
       toast.error('Failed to update priority');
+    }
+  };
+
+  const handleDeleteRequirement = async (req) => {
+    if (!req?.id) return;
+    setDeletingRequirement(req);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingRequirement?.id) return;
+    try {
+      const result = await dispatch(deleteRequirement(deletingRequirement.id));
+      if (result?.success) {
+        toast.success('Requirement deleted');
+        await dispatch(getRequirement());
+      } else {
+        toast.error(result?.error || 'Failed to delete requirement');
+      }
+    } catch (e) {
+      toast.error('Failed to delete requirement');
+    } finally {
+      setDeletingRequirement(null);
     }
   };
 
@@ -236,28 +306,57 @@ const JobDescriptions = () => {
                         )}
                       </td>
                       {/* Technology */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {editingCell.id === req.id && editingCell.field === 'technology' ? (
-                          <input
-                            autoFocus
-                            type="text"
-                            className="w-full px-2 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value={editingCell.value}
-                            disabled={editingCell.saving}
-                            onChange={(e) => setEditingCell((s) => ({ ...s, value: e.target.value }))}
-                            onBlur={commitEdit}
-                            onKeyDown={onCellKeyDown}
+                      <td className="px-6 py-4 text-sm text-gray-900" style={{ width: '25%' }}>
+                        <div className="relative" style={{ minWidth: '200px' }}>
+                          <CustomDropdown
+                            options={technologyOptions}
+                            value={
+                              Array.isArray(req.technology) 
+                                ? req.technology.map(t => 
+                                    typeof t === 'string' 
+                                      ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
+                                      : t
+                                  )
+                                : req.technology 
+                                  ? [typeof req.technology === 'string' 
+                                      ? technologyOptions.find(opt => opt.value === req.technology) || { value: req.technology, label: req.technology }
+                                      : req.technology
+                                    ]
+                                  : []
+                            }
+                            onChange={async (selected) => {
+                              // Update immediately
+                              const payload = {
+                                technology: selected.map(t => t.value)
+                              };
+                              
+                              // Show saving state
+                              setEditingCell({ id: req.id, field: 'technology', value: selected, saving: true });
+                              
+                              try {
+                                const result = await dispatch(updateRequirement(req.id, payload));
+                                if (result?.success) {
+                                  toast.success('Technology updated successfully');
+                                  await dispatch(getRequirement());
+                                } else {
+                                  toast.error(result?.error || 'Failed to update technology');
+                                }
+                              } catch (err) {
+                                toast.error('Failed to update technology');
+                                console.error('Error updating technology:', err);
+                              } finally {
+                                setEditingCell({ id: null, field: null, value: '', saving: false });
+                              }
+                            }}
+                            multiSelect={true}
+                            searchable={true}
+                            placeholder="Select technologies..."
+                            className="w-full"
                           />
-                        ) : (
-                          <button
-                            type="button"
-                            className="text-left w-full hover:underline text-gray-600"
-                            title="Click to edit"
-                            onClick={() => startEdit(req, 'technology')}
-                          >
-                            {req.technology || 'None'}
-                          </button>
-                        )}
+                          {editingCell.saving && editingCell.id === req.id && (
+                            <FiLoader className="absolute right-2 top-3 w-4 h-4 text-blue-500 animate-spin" />
+                          )}
+                        </div>
                       </td>
                       {/* Openings (number) */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
@@ -326,10 +425,17 @@ const JobDescriptions = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10 border-l border-gray-200">
                         <button
                           onClick={() => setEditingRequirement(req)}
-                          className="text-blue-600 hover:text-blue-900 mr-4"
+                          className="text-blue-600 hover:text-blue-900 mr-2"
                           title="Edit"
                         >
-                          <FiEdit2 className="h-5 w-5" />
+                          <FiEdit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRequirement(req)}
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete"
+                        >
+                          <FiTrash2 className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>
@@ -356,6 +462,16 @@ const JobDescriptions = () => {
             // You might want to update the local state or refetch requirements
             dispatch(getRequirement());
           }}
+        />
+      )}
+
+      {/* Delete Confirm Popup */}
+      {deletingRequirement && (
+        <DeleteConfirmPopup
+          isOpen={!!deletingRequirement}
+          itemName={deletingRequirement.name || 'this requirement'}
+          onClose={() => setDeletingRequirement(null)}
+          onConfirm={confirmDelete}
         />
       )}
 

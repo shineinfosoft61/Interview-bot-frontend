@@ -24,6 +24,7 @@ const NavbarComponent = () => {
     { to: '/candidates', label: 'Candidate', icon: <Icon path="M6 2a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6H6zm8 7V3.5L18.5 9H14z" /> },
     { to: '/hr-control', label: 'Quick Interview', icon: <Icon path="M3 6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V6.75z" /> },
     { to: '/scheduled-interviews', label: 'Schedules', icon: <Icon path="M4 5h16v4H4z M4 10h16v10H4z M7 3h2v4H7z M15 3h2v4h-2z" /> },
+    { to: '/questions', label: 'Questions', icon: <Icon path="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
     { to: '/login', label: 'Login', icon: <Icon path="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6A2.25 2.25 0 005.25 5.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15" /> },
     { to: '/signup', label: 'Signup', icon: <Icon path="M12 4.5v15m-7.5-7.5h15" /> },
     ...(user?.role === 'Admin' ? [{ to: '/users', label: 'Users', icon: <Icon path="M15 19a4 4 0 01-8 0m8 0a4 4 0 00-8 0m8 0h3a2 2 0 002-2v-1a4 4 0 00-4-4h-1M7 19H4a2 2 0 01-2-2v-1a4 4 0 014-4h1m8-4a4 4 0 11-8 0 4 4 0 018 0z" /> }] : []),

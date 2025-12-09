@@ -4,7 +4,7 @@ import { FiUpload, FiFile, FiX, FiSend, FiAlertCircle } from 'react-icons/fi';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { REQUIREMENT_API } from '../reduxServices/api/InterviewApi';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 import { getRequirement } from '../reduxServices/actions/InterviewAction';
 
 
@@ -87,10 +87,9 @@ const Requirements = ({ onClose }) => {
       });
 
       // Make the API call directly instead of using Redux
-      const response = await axios.post(REQUIREMENT_API, formData, {
+      const response = await axiosInstance.post(REQUIREMENT_API, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       

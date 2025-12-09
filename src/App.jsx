@@ -10,6 +10,7 @@ import SheduleList from "./components/SheduleList";
 import Requirements from "./components/Requirements";
 import JobDescriptions from "./pages/JobDescriptions";
 import CandidateList from "./pages/CandidateList";
+import Questions from "./pages/Questions";
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import "./css/style.css";
@@ -75,6 +76,7 @@ function AppContent() {
             <Route path="/scheduled-interviews" element={<SheduleList />} />
             <Route path="/job-descriptions" element={<JobDescriptions />} />
             <Route path="/candidates" element={<CandidateList />} />
+            <Route path="/questions" element={<Questions />} />
             <Route path="/requirements" element={<Requirements />} />
             <Route path="/resume" element={<Resume />} />
             <Route path="/users" element={<Users />} />

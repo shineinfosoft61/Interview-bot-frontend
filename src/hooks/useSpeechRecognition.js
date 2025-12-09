@@ -30,11 +30,28 @@ export const useSpeechRecognition = () => {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
-      // Enhanced settings for better reliability
+      // Enhanced settings for better reliability and audio quality
       recognitionRef.current.continuous = true;
       recognitionRef.current.interimResults = true;
       recognitionRef.current.lang = 'en-US';
       recognitionRef.current.maxAlternatives = 1;
+      
+      // Enhanced audio settings for better quality
+      if (recognitionRef.current.audioContext) {
+        recognitionRef.current.audioContext.sampleRate = 44100;
+      }
+      
+      // Request higher quality audio if supported
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 44100
+          }
+        }).catch(err => console.log('Enhanced audio setup failed:', err));
+      }
       
       // Add grammar hints for better recognition (if supported)
       // if ('webkitSpeechGrammarList' in window) {
@@ -78,11 +95,23 @@ export const useSpeechRecognition = () => {
               try {
                 recognitionRef.current.start();
                 setIsListening(true);
+                console.log('Recognition auto-restarted successfully');
               } catch (error) {
                 console.log('Recognition restart failed:', error);
+                // Retry after a longer delay
+                setTimeout(() => {
+                  if (isRecordingRef.current && recognitionRef.current) {
+                    try {
+                      recognitionRef.current.start();
+                      setIsListening(true);
+                    } catch (retryError) {
+                      console.error('Recognition retry failed:', retryError);
+                    }
+                  }
+                }, 500);
               }
             }
-          }, 100);
+          }, 50); // Reduced delay for faster restart
         } else {
           setIsRecording(false);
         }
@@ -169,28 +198,47 @@ export const useSpeechRecognition = () => {
       setIsRecording(true);
       console.log("IsListening", isListening);
 
-      
-      try {
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (error) {
-        console.error('Failed to start speech recognition:', error);
+      // Request enhanced microphone access before starting
+      navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100,
+          channelCount: 1
+        }
+      }).then(stream => {
+        // Stop the stream immediately - we just needed permission
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Now start speech recognition
+        try {
+          recognitionRef.current.start();
+          setIsListening(true);
+          console.log('Speech recognition started with enhanced audio');
+        } catch (error) {
+          console.error('Failed to start speech recognition:', error);
+          setIsRecording(false);
+          setIsListening(false);
+          
+          // Retry after a short delay
+          setTimeout(() => {
+            if (micEnabledRef.current) {
+              try {
+                recognitionRef.current.start();
+                setIsRecording(true);
+                setIsListening(true);
+              } catch (retryError) {
+                console.error('Retry failed:', retryError);
+              }
+            }
+          }, 1000);
+        }
+      }).catch(error => {
+        console.error('Microphone access denied:', error);
         setIsRecording(false);
         setIsListening(false);
-        
-        // Retry after a short delay
-        setTimeout(() => {
-          if (micEnabledRef.current) {
-            try {
-              recognitionRef.current.start();
-              setIsRecording(true);
-              setIsListening(true);
-            } catch (retryError) {
-              console.error('Retry failed:', retryError);
-            }
-          }
-        }, 1000);
-      }
+      });
     }
   };
 

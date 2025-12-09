@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { API_URL } from '../reduxServices/api/InterviewApi';
-import axios from 'axios';
+import axiosInstance from '../utils/axios';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from "../context/AuthContext.jsx";
 
@@ -17,7 +17,7 @@ const Login = () => {
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const res = await axios.post(API_URL + '/login/', form);
+      const res = await axiosInstance.post('/login/', form);
       if (res.status === 200) {
         console.log(res.status);
         loginUser(res.data.user, res.data.access);

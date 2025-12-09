@@ -196,7 +196,10 @@ const InterviewBot = () => {
     }
     setIsSpeaking(false);
     setMicEnabled(true);
+    
+    // Clear transcript immediately to prevent previous answer from persisting
     resetTranscript();
+    stopRecording();
     
     // Save current answer
     const newAnswer = {
@@ -218,8 +221,6 @@ const InterviewBot = () => {
     // Move to next question from pre-fetched list if available
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      resetTranscript();
-      stopRecording();
       setMicEnabled(false); // Disable mic for next question
       return; // We already have the next question in memory
     }

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API,PHOTO_API, REGISTER_API, CHAT_API } from "../api/InterviewApi";
+import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API, PHOTO_API, REGISTER_API, CHAT_API } from "../api/InterviewApi";
 import { InterviewConstant } from "../constant/InterviewConstant";
 
 
@@ -124,6 +124,27 @@ export const updateUser = (id, data) => {
   };
 };
 
+// Delete a requirement by UUID
+export const deleteRequirement = (id) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.delete(`${REQUIREMENT_API}${id}/delete/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.status === 204 || response.data) {
+        return { success: true };
+      } else {
+        return { success: false, error: "Failed to delete requirement" };
+      }
+    } catch (error) {
+      console.error("Error deleting requirement:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
 // Update existing HR document
 export const updateHRDocument = (id, data) => {
   return async (dispatch) => {
@@ -191,19 +212,19 @@ export const getHrDocument = () => {
   };
 };
 
+import axiosInstance from '../../utils/axios';
+
 export const getRequirement = () => {
   return async (dispatch) => {
     try {
-      const res = await axios.get(REQUIREMENT_API, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await axiosInstance.get(REQUIREMENT_API);
       console.log('requirement', res.data);
       dispatch(RequirementDetail(res.data));
+      return { success: true, data: res.data };
     } catch (error) {
-      console.error("Error fetching projects:", error);
+      console.error("Error fetching requirements:", error);
+      // The error will be automatically handled by the axios interceptor
+      throw error;
     }
   };
 };
@@ -352,7 +373,8 @@ export const saveQuestion = (data) => {
     try {
       const response = await axios.post(INTERVIEW_API, data, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
 
@@ -365,6 +387,150 @@ export const saveQuestion = (data) => {
       }
     } catch (error) {
       console.error("Error adding question:", error);
+      return { success: false, error: error.response?.data?.details || error.message };
+    }
+  };
+};
+
+// Upload questions via file
+export const uploadQuestionsFile = (formData) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(INTERVIEW_API, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.data) {
+        console.log("Questions uploaded successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error uploading questions:", error);
+      return { success: false, error: error.response?.data?.details || error.message };
+    }
+  };
+};
+
+// Get questions for a candidate or all questions
+export const getQuestions = (candidateId = null) => {
+  return async (dispatch) => {
+    try {
+      const url = candidateId ? `${INTERVIEW_API}${candidateId}/` : INTERVIEW_API;
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.data) {
+        // Dispatch the questions to Redux store
+        dispatch({
+          type: InterviewConstant.ALL_QUESTION_DATA,
+          data: response.data
+        });
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
+// Update a specific question
+export const updateQuestion = (questionId, data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.put(`${INTERVIEW_API}${questionId}/`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.data) {
+        console.log("Question updated successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error updating question:", error);
+      return { success: false, error: error.response?.data?.details || error.message };
+    }
+  };
+};
+
+// Delete a specific question
+export const deleteQuestion = (questionId) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.delete(`${INTERVIEW_API}${questionId}/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.status === 204 || response.data) {
+        console.log("Question deleted successfully");
+        return { success: true };
+      } else {
+        console.log("Failed to delete question");
+        return { success: false, error: "Failed to delete question" };
+      }
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      return { success: false, error: error.response?.data?.details || error.message };
+    }
+  };
+};
+
+// Get all enums (technologies, difficulty levels, etc.)
+export const getEnums = () => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.get(`${INTERVIEW_API.replace('/questions/', '')}/enums/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.data) {
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error fetching enums:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
+// Get technology choices
+export const getTechnologyChoices = () => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.get(`${INTERVIEW_API.replace('/questions/', '')}/technology-choices/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (response.data) {
+        return { success: true, data: response.data };
+      } else {
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error fetching technology choices:", error);
       return { success: false, error: error.message };
     }
   };
@@ -459,6 +625,12 @@ export const PdfDataAction = {
   getRequirement,
   updateRequirement,
   saveQuestion,
+  uploadQuestionsFile,
+  getQuestions,
+  updateQuestion,
+  deleteQuestion,
+  getEnums,
+  getTechnologyChoices,
   getUserList,
   updateUser,
   ChatApi,

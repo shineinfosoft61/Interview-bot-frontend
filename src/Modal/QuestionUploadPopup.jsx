@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiX, FiUpload, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { useDispatch } from 'react-redux';
-import { saveQuestion } from '../reduxServices/actions/InterviewAction';
+import { uploadQuestionsFile } from '../reduxServices/actions/InterviewAction';
 
 
 const QuestionUploadPopup = ({ editHrDoc, isOpen, onClose, onUpload}) => {
@@ -40,10 +40,17 @@ const QuestionUploadPopup = ({ editHrDoc, isOpen, onClose, onUpload}) => {
     if (file && !fileError) {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('hr', editHrDoc?.id);
+      formData.append('candidate', editHrDoc?.id);
+      
+      // Debug: Check FormData content
+      console.log('FormData content:');
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
+      console.log('editHrDoc?.id:', editHrDoc?.id);
   
       // Dispatch or make API call with formData directly
-      dispatch(saveQuestion(formData));  // not wrapped in JSON
+      dispatch(uploadQuestionsFile(formData));  // not wrapped in JSON
       onClose();
       setFile(null);
       onUpload(file);
@@ -189,6 +196,7 @@ const QuestionUploadPopup = ({ editHrDoc, isOpen, onClose, onUpload}) => {
                                 <span>Upload a file</span>
                                 <input 
                                   type="file" 
+                                  name="file"
                                   className="sr-only" 
                                   onChange={handleFileChange}
                                   accept=".txt,.pdf"

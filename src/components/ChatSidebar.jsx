@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import axiosInstance from '../utils/axios';
 import { X, MessageSquare, Sparkles, Send, Save, Copy, Download, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
@@ -17,6 +18,8 @@ const ChatSidebar = ({ open, onClose }) => {
   const [generatedJD, setGeneratedJD] = useState(null);
   const [status, setStatus] = useState('idle'); // idle | awaiting_analysis | awaiting_generation | editing_jd
   const [isLoading, setIsLoading] = useState(false);
+  const [isJDActionLoading, setIsJDActionLoading] = useState(false);
+  const [activeJDAction, setActiveJDAction] = useState(null); // 'save' | 'copy' | 'docx' | 'pdf' | null
   const [originalMessage, setOriginalMessage] = useState(''); // Store original user message
 
   // Handle sending message
@@ -32,16 +35,8 @@ const ChatSidebar = ({ open, onClose }) => {
 
     try {
       // Call analyze API
-      const response = await fetch('/jd-assistant/analyze/', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ message: userMessage })
-      });
-      
-      const data = await response.json();
+      const response = await axiosInstance.post('/jd-assistant/analyze/', { message: userMessage });
+      const data = response.data;
       
       if (data.status === 'need_more_info') {
         setMessages(prev => [...prev, { role: 'assistant', text: data.message }]);
@@ -66,19 +61,12 @@ const ChatSidebar = ({ open, onClose }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/jd-assistant/generate/', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ 
-          message: originalMessage,
-          analysis_data: analysisData 
-        })
+      const response = await axiosInstance.post('/jd-assistant/generate/', { 
+        message: originalMessage,
+        analysis_data: analysisData 
       });
       
-      const data = await response.json();
+      const data = response.data;
       
       if (data.jd_text) {
         setGeneratedJD(data.jd_text);
@@ -116,22 +104,22 @@ const ChatSidebar = ({ open, onClose }) => {
     if (!generatedJD) return;
     
     try {
-      const response = await fetch('/jd-assistant/save/', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ jd_text: generatedJD })
+      setIsJDActionLoading(true);
+      setActiveJDAction('save');
+      const response = await axiosInstance.post('/jd-assistant/save/', { 
+        jd_text: generatedJD 
       });
       
-      if (response.ok) {
+      if (response.data) {
         toast.success('Job description saved successfully!');
       } else {
         toast.error('Failed to save job description.');
       }
     } catch (error) {
       toast.error('Failed to save job description.');
+    } finally {
+      setIsJDActionLoading(false);
+      setActiveJDAction(null);
     }
   };
 
@@ -139,8 +127,15 @@ const ChatSidebar = ({ open, onClose }) => {
   // Copy JD
   const handleCopyJD = () => {
     if (generatedJD) {
+      setIsJDActionLoading(true);
+      setActiveJDAction('copy');
       navigator.clipboard.writeText(generatedJD);
       toast.success('Job description copied to clipboard!');
+      // Copy is sync; simulate brief loading for UX consistency
+      setTimeout(() => {
+        setIsJDActionLoading(false);
+        setActiveJDAction(null);
+      }, 400);
     }
   };
 
@@ -149,6 +144,9 @@ const ChatSidebar = ({ open, onClose }) => {
     if (!generatedJD) return;
     
     try {
+      setIsJDActionLoading(true);
+      setActiveJDAction('docx');
+      const jdTitle = (generatedJD.split('\n')[0] || 'Job Description').trim() || 'Job Description';
       const doc = new Document({
         sections: [{
           properties: {},
@@ -161,11 +159,14 @@ const ChatSidebar = ({ open, onClose }) => {
       });
 
       const blob = await Packer.toBlob(doc);
-      saveAs(blob, 'job-description.docx');
+      saveAs(blob, `${jdTitle}.docx`);
       toast.success('DOCX downloaded successfully!');
     } catch (error) {
       console.error('DOCX error:', error);
       toast.error('Failed to download DOCX.');
+    } finally {
+      setIsJDActionLoading(false);
+      setActiveJDAction(null);
     }
   };
 
@@ -174,6 +175,9 @@ const ChatSidebar = ({ open, onClose }) => {
     if (!generatedJD) return;
     
     try {
+      setIsJDActionLoading(true);
+      setActiveJDAction('pdf');
+      const jdTitle = (generatedJD.split('\n')[0] || 'Job Description').trim() || 'Job Description';
       const doc = new jsPDF();
       const pageHeight = doc.internal.pageSize.height;
       const margin = 15;
@@ -195,11 +199,14 @@ const ChatSidebar = ({ open, onClose }) => {
         yPosition += lineHeight;
       });
       
-      doc.save('job-description.pdf');
+      doc.save(`${jdTitle}.pdf`);
       toast.success('PDF downloaded successfully!');
     } catch (error) {
       console.error('PDF error:', error);
       toast.error('Failed to download PDF.');
+    } finally {
+      setIsJDActionLoading(false);
+      setActiveJDAction(null);
     }
   };
 
@@ -300,29 +307,53 @@ const ChatSidebar = ({ open, onClose }) => {
                 <div className="flex gap-2">
                   <button
                     onClick={handleSaveJD}
-                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1"
+                    className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer relative overflow-hidden"
+                    disabled={isJDActionLoading}
                   >
+                    {activeJDAction === 'save' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-green-600">
+                        <div className="w-full h-0.5 bg-green-300 animate-pulse"></div>
+                      </div>
+                    )}
                     <Save className="w-3 h-3" />
                     Save
                   </button>
                   <button
                     onClick={handleCopyJD}
-                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1"
+                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer relative overflow-hidden"
+                    disabled={isJDActionLoading}
                   >
+                    {activeJDAction === 'copy' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-blue-600">
+                        <div className="w-full h-0.5 bg-blue-300 animate-pulse"></div>
+                      </div>
+                    )}
                     <Copy className="w-3 h-3" />
                     Copy
                   </button>
                   <button
                     onClick={handleDownloadDOCX}
-                    className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 flex items-center gap-1"
+                    className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer relative overflow-hidden"
+                    disabled={isJDActionLoading}
                   >
+                    {activeJDAction === 'docx' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-purple-600">
+                        <div className="w-full h-0.5 bg-purple-300 animate-pulse"></div>
+                      </div>
+                    )}
                     <Download className="w-3 h-3" />
                     DOCX
                   </button>
                   <button
                     onClick={handleDownloadPDF}
-                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed flex items-center gap-1 transition-colors cursor-pointer relative overflow-hidden"
+                    disabled={isJDActionLoading}
                   >
+                    {activeJDAction === 'pdf' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-red-600">
+                        <div className="w-full h-0.5 bg-red-300 animate-pulse"></div>
+                      </div>
+                    )}
                     <FileText className="w-3 h-3" />
                     PDF
                   </button>
@@ -342,7 +373,7 @@ const ChatSidebar = ({ open, onClose }) => {
             <div className="rounded-2xl border border-gray-300 shadow-sm focus-within:ring-2 focus-within:ring-blue-500">
               <textarea
                 ref={textareaRef}
-                rows={3}
+                rows={2}
                 placeholder="What can I help you do?"
                 className="w-full resize-none rounded-2xl px-4 py-3 outline-none text-gray-800 placeholder:text-gray-400"
                 value={message}

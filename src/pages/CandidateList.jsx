@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { FiArrowLeft, FiFilter, FiClock, FiCheckCircle, FiXCircle, FiEdit2, FiPlus, FiFile } from 'react-icons/fi';
+import { FiArrowLeft, FiFilter, FiClock, FiCheckCircle, FiXCircle, FiEdit2, FiPlus, FiFile, FiHelpCircle, FiLoader } from 'react-icons/fi';
 import { FileText, X } from 'lucide-react';
 import HrDocPopup from '../Modal/HrDocPopup';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { getHrDocument, getRequirement, updateHRDocument, saveHRDocument } from '../reduxServices/actions/InterviewAction';
+import { getHrDocument, getRequirement, updateHRDocument, saveHRDocument, getEnums } from '../reduxServices/actions/InterviewAction';
 import Resume from '../components/Resume';
-import QuestionUploadPopup from '../Modal/QuestionUploadPopup';
+import CustomDropdown from '../components/CustomDropdown';
+import QuestionManagementPopup from '../Modal/QuestionManagementPopup';
 import AnswerReportModal from '../Modal/AnswerReportModal';
 import DecisionConfirmPopup from '../Modal/DecisionConfirmPopup';
+import { toast } from 'react-toastify';
 
 
 const CandidateList = () => {
@@ -28,6 +30,8 @@ const CandidateList = () => {
   const [reportInterview, setReportInterview] = useState(null);
   const [showResumePopup, setShowResumePopup] = useState(false);
   const [confirmCandidate, setConfirmCandidate] = useState(null);
+  const [technologyOptions, setTechnologyOptions] = useState([]);
+  const [editingCell, setEditingCell] = useState({ id: null, field: null, value: '', saving: false });
   const navigate = useNavigate();
 
   const closeModal = () => {
@@ -68,6 +72,86 @@ const CandidateList = () => {
     
     fetchRequirements();
   }, [dispatch]);
+
+  useEffect(() => {
+    const fetchTechnologyOptions = async () => {
+      try {
+        const enumsResult = await dispatch(getEnums());
+        if (enumsResult?.success && enumsResult.data?.technologies) {
+          setTechnologyOptions(enumsResult.data.technologies);
+        }
+      } catch (err) {
+        console.error('Error fetching technology options:', err);
+      }
+    };
+    
+    fetchTechnologyOptions();
+  }, [dispatch]);
+
+  const startEdit = (candidate, field) => {
+    if (!candidate || !field) return;
+    let value = candidate[field] ?? '';
+    
+    // For technology field, convert to proper format
+    if (field === 'technology') {
+      if (Array.isArray(candidate.technology)) {
+        value = candidate.technology.map(t => 
+          typeof t === 'string' 
+            ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
+            : t
+        );
+      } else if (candidate.technology) {
+        value = [typeof candidate.technology === 'string' 
+          ? technologyOptions.find(opt => opt.value === candidate.technology) || { value: candidate.technology, label: candidate.technology }
+          : candidate.technology
+        ];
+      } else {
+        value = [];
+      }
+    }
+    
+    setEditingCell({ id: candidate.id, field, value, saving: false });
+  };
+
+  const cancelEdit = () => {
+    setEditingCell({ id: null, field: null, value: '', saving: false });
+  };
+
+  const saveEdit = async () => {
+    if (!editingCell.id) return;
+    
+    setEditingCell(prev => ({ ...prev, saving: true }));
+    
+    try {
+      let payload;
+      if (editingCell.field === 'technology') {
+        // For technology, send array of values
+        payload = {
+          technology: editingCell.value.map(t => t.value)
+        };
+      } else {
+        // For other fields, send the value directly
+        payload = {
+          [editingCell.field]: editingCell.value
+        };
+      }
+      
+      const result = await dispatch(updateHRDocument(editingCell.id, payload));
+      
+      if (result?.success) {
+        toast.success('Candidate updated successfully');
+        // Refresh candidates
+        await dispatch(getHrDocument());
+      } else {
+        toast.error(result?.error || 'Failed to update candidate');
+      }
+    } catch (err) {
+      toast.error('Failed to update candidate');
+      console.error('Error updating candidate:', err);
+    } finally {
+      cancelEdit();
+    }
+  };
 
   const handleRequirementChange = async (candidateId, requirementId) => {
     try {
@@ -234,8 +318,57 @@ const CandidateList = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {candidate.email || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {candidate.technology || 'N/A'}
+                    <td className="px-6 py-4 text-sm text-gray-900" style={{ width: '25%' }}>
+                      <div className="relative" style={{ minWidth: '200px' }}>
+                        <CustomDropdown
+                          options={technologyOptions}
+                          value={
+                            Array.isArray(candidate.technology) 
+                              ? candidate.technology.map(t => 
+                                  typeof t === 'string' 
+                                    ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
+                                    : t
+                                )
+                              : candidate.technology 
+                                ? [typeof candidate.technology === 'string' 
+                                    ? technologyOptions.find(opt => opt.value === candidate.technology) || { value: candidate.technology, label: candidate.technology }
+                                    : candidate.technology
+                                  ]
+                                : []
+                          }
+                          onChange={async (selected) => {
+                            // Update immediately
+                            const payload = {
+                              technology: selected.map(t => t.value)
+                            };
+                            
+                            // Show saving state
+                            setEditingCell({ id: candidate.id, field: 'technology', value: selected, saving: true });
+                            
+                            try {
+                              const result = await dispatch(updateHRDocument(candidate.id, payload));
+                              if (result?.success) {
+                                toast.success('Technology updated successfully');
+                                await dispatch(getHrDocument());
+                              } else {
+                                toast.error(result?.error || 'Failed to update technology');
+                              }
+                            } catch (err) {
+                              toast.error('Failed to update technology');
+                              console.error('Error updating technology:', err);
+                            } finally {
+                              setEditingCell({ id: null, field: null, value: '', saving: false });
+                            }
+                          }}
+                          multiSelect={true}
+                          searchable={true}
+                          placeholder="Select technologies..."
+                          className="w-full"
+                        />
+                        {editingCell.saving && editingCell.id === candidate.id && (
+                          <FiLoader className="absolute right-2 top-3 w-4 h-4 text-blue-500 animate-spin" />
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {candidate.phone || 'N/A'}
@@ -291,18 +424,6 @@ const CandidateList = () => {
                     )}
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10 border-l border-gray-200">
                       <div className="flex items-center gap-2 min-w-[120px]">
-                        {candidate.interview_status !== "Completed" && (
-                          <button
-                            onClick={() => {
-                              setEditHrDoc(candidate);
-                              setShowUploadPopup(true);
-                            }}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            <FiPlus className="mr-1 h-3 w-2" />
-                            Add Questions
-                          </button>
-                        )}
                         <button
                           onClick={() => {
                             setEditHrDoc(candidate);
@@ -310,12 +431,26 @@ const CandidateList = () => {
                           }}
                           className={`p-2 rounded-lg transition-colors ${
                             candidate.interview_status === "Completed" 
-                              ? "text-blue-600 hover:bg-blue-50 border border-blue-200" 
+                              ? "text-blue-600 hover:bg-blue-50" 
                               : "text-blue-600 hover:text-blue-900"
                           }`}
                           title="Edit Candidate"
                         >
                           <FiEdit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditHrDoc(candidate);
+                            setShowUploadPopup(true);
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${
+                            candidate.interview_status === "Completed"
+                              ? "text-gray-400 hover:text-gray-600"
+                              : "text-blue-600 hover:bg-blue-50"
+                          }`}
+                          title={candidate.interview_status === "Completed" ? "View Questions" : "Manage Questions"}
+                        >
+                          <FiHelpCircle className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -341,15 +476,11 @@ const CandidateList = () => {
         />
       )}
 
-      <QuestionUploadPopup
+      <QuestionManagementPopup
         editHrDoc={editHrDoc}
-        setEditHrDoc={setEditHrDoc}
         isOpen={showUploadPopup}
         onClose={() => setShowUploadPopup(false)}
-        onUpload={(file) => {
-          console.log('Uploading file for candidate:', editHrDoc?.id, file);
-          // Add your file upload logic here
-        }}
+        isCompleted={editHrDoc?.interview_status === "Completed"}
       />
 
       <DecisionConfirmPopup
