@@ -311,23 +311,36 @@ const JobDescriptions = () => {
                           <CustomDropdown
                             options={technologyOptions}
                             value={
-                              Array.isArray(req.technology) 
-                                ? req.technology.map(t => 
+                              // Handle different data formats for technology field
+                              (() => {
+                                
+                                if (!req.technology) return [];
+                                
+                                // If it's already an array, use it
+                                if (Array.isArray(req.technology)) {
+                                  return req.technology.map(t => 
                                     typeof t === 'string' 
                                       ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
                                       : t
-                                  )
-                                : req.technology 
-                                  ? [typeof req.technology === 'string' 
-                                      ? technologyOptions.find(opt => opt.value === req.technology) || { value: req.technology, label: req.technology }
-                                      : req.technology
-                                    ]
-                                  : []
+                                  );
+                                }
+                                
+                                // If it's a comma-separated string, split it
+                                if (typeof req.technology === 'string') {
+                                  const techArray = req.technology.split(',').map(t => t.trim()).filter(Boolean);
+                                  return techArray.map(t => 
+                                    technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
+                                  );
+                                }
+                                
+                                // Fallback
+                                return [];
+                              })()
                             }
                             onChange={async (selected) => {
                               // Update immediately
                               const payload = {
-                                technology: selected.map(t => t.value)
+                                technology: selected.map(t => t.value).join(',')
                               };
                               
                               // Show saving state

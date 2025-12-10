@@ -16,7 +16,11 @@ const CustomDropdown = ({
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredOptions, setFilteredOptions] = useState(options);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+
+
 
   
   useEffect(() => {
@@ -27,9 +31,60 @@ const CustomDropdown = ({
     );
   }, [searchTerm, options]);
 
+  // Calculate dropdown position when opening
+  const updateDropdownPosition = () => {
+    if (buttonRef.current && isOpen) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownHeight = 240; // Estimated max height of dropdown
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      let topPosition;
+      if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+        // Not enough space below, show above
+        topPosition = rect.top + window.scrollY - dropdownHeight;
+      } else {
+        // Show below (default)
+        topPosition = rect.bottom + window.scrollY;
+      }
+      
+      const newPosition = {
+        top: topPosition,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      };
+      
+      
+      setDropdownPosition(newPosition);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      updateDropdownPosition();
+      // Recalculate on scroll and resize
+      const handleScroll = () => {
+        updateDropdownPosition();
+      };
+      const handleResize = () => {
+        updateDropdownPosition();
+      };
+      
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', handleResize, { passive: true });
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      if (buttonRef.current && !buttonRef.current.contains(event.target) && 
+          dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
         setSearchTerm('');
         if (onBlur) onBlur();
@@ -42,10 +97,24 @@ const CustomDropdown = ({
 
   const handleSelect = (option) => {
     if (multiSelect) {
-      const isSelected = value && value.some(v => v && v.value === option.value);
+      const isSelected = value && Array.isArray(value) && value.some(v => {
+        if (!v) return false;
+        const currentValue = typeof v === 'string' ? v : v.value;
+        const optionValue = typeof option.value === 'string' ? option.value : option.value.toString();
+        return currentValue === optionValue;
+      });
+      
       if (isSelected) {
-        onChange(value.filter(v => v && v.value !== option.value));
+        // Remove the option
+        const newValue = value.filter(v => {
+          if (!v) return false;
+          const currentValue = typeof v === 'string' ? v : v.value;
+          const optionValue = typeof option.value === 'string' ? option.value : option.value.toString();
+          return currentValue !== optionValue;
+        });
+        onChange(newValue);
       } else {
+        // Add the option
         onChange([...(value || []), option]);
       }
     } else {
@@ -57,22 +126,44 @@ const CustomDropdown = ({
   };
 
   const handleRemove = (optionValue) => {
-    onChange(value.filter(v => v && v.value !== optionValue));
+    const newValue = value.filter(v => {
+      if (!v) return false;
+      const currentValue = typeof v === 'string' ? v : v.value;
+      const targetValue = typeof optionValue === 'string' ? optionValue : optionValue.toString();
+      return currentValue !== targetValue;
+    });
+    onChange(newValue);
   };
 
   const getDisplayValue = () => {
+    
     if (multiSelect) {
-      if (value.length === 0) return placeholder;
-      if (value.length === 1) return value[0].label;
-      if (value.length === 2) return `${value[0].label}, ${value[1].label}`;
-      return `${value[0].label}, ${value[1].label}, +${value.length - 2} more`;
+      if (!value || value.length === 0) return placeholder;
+      
+      // Extract labels from values (handle both string and object formats)
+      const labels = value.map(v => {
+        if (!v) return '';
+        if (typeof v === 'string') return v;
+        return v.label || v.value || '';
+      }).filter(Boolean);
+      
+      
+      if (labels.length === 0) return placeholder;
+      if (labels.length === 1) return labels[0];
+      if (labels.length === 2) return `${labels[0]}, ${labels[1]}`;
+      return `${labels[0]}, ${labels[1]}, +${labels.length - 2} more`;
     }
-    return value.length > 0 ? value[0].label : placeholder;
+    
+    if (!value || value.length === 0) return placeholder;
+    const firstValue = value[0];
+    if (typeof firstValue === 'string') return firstValue;
+    return firstValue.label || firstValue.value || placeholder;
   };
 
   return (
     <div ref={dropdownRef} className={`relative ${className}`}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
@@ -97,7 +188,16 @@ const CustomDropdown = ({
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden" style={{ minWidth: '200px' }}>
+        <div 
+          className="bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-hidden" 
+          style={{ 
+            position: 'fixed',
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            zIndex: 9999
+          }}
+        >
           {searchable && (
             <div className="p-2 border-b border-gray-200">
               <input
@@ -114,7 +214,13 @@ const CustomDropdown = ({
           <div className="max-h-48 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => {
-                const isSelected = value && value.some(v => v && v.value === option.value);
+                const isSelected = value && Array.isArray(value) && value.some(v => {
+                  if (!v) return false;
+                  // Handle both string values and object values
+                  const currentValue = typeof v === 'string' ? v : v.value;
+                  const optionValue = typeof option.value === 'string' ? option.value : option.value.toString();
+                  return currentValue === optionValue;
+                });
                 return (
                   <div
                     key={option.value}

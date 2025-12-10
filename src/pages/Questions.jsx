@@ -16,20 +16,13 @@ const Questions = () => {
   const [deletingQuestion, setDeletingQuestion] = useState(null);
   const [editingCell, setEditingCell] = useState({ id: null, field: null, value: '', saving: false });
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTechnologies, setSelectedTechnologies] = useState([]);
   const [technologyOptions, setTechnologyOptions] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch questions
-        const result = await dispatch(getQuestions());
-        if (result?.success) {
-          // Questions are already ordered by 'order' field from API
-        } else {
-          console.error('Failed to fetch questions:', result?.error);
-        }
-
         // Fetch technology options
         const enumsResult = await dispatch(getEnums());
         if (enumsResult?.success && enumsResult.data?.technologies) {
@@ -37,6 +30,9 @@ const Questions = () => {
         } else {
           console.error('Failed to fetch enums:', enumsResult?.error);
         }
+        
+        // Fetch questions with initial filters
+        await fetchQuestionsWithFilters();
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -46,6 +42,13 @@ const Questions = () => {
     
     fetchData();
   }, [dispatch]);
+
+  // Refetch questions when search or technology filters change
+  useEffect(() => {
+    if (!isLoading) {
+      fetchQuestionsWithFilters();
+    }
+  }, [searchQuery, selectedTechnologies]);
 
   const startEdit = (question, field) => {
     if (!question || !field) return;
@@ -84,9 +87,9 @@ const Questions = () => {
     try {
       let payload;
       if (editingCell.field === 'technology') {
-        // For technology, send array of values
+        // For technology, send comma-separated string
         payload = {
-          technology: editingCell.value.map(t => t.value)
+          technology: editingCell.value.map(t => t.value).join(',')
         };
       } else {
         // For other fields, send the value directly
@@ -113,14 +116,28 @@ const Questions = () => {
     }
   };
 
+  const fetchQuestionsWithFilters = async () => {
+    try {
+      const techValues = selectedTechnologies.map(t => t.value);
+      const result = await dispatch(getQuestions(null, searchQuery, techValues));
+      if (result?.success) {
+        // Questions are already ordered by 'order' field from API
+      } else {
+        console.error('Failed to fetch questions:', result?.error);
+      }
+    } catch (err) {
+      console.error('Error fetching questions:', err);
+    }
+  };
+
   const handleDelete = async (questionId) => {
     try {
       const result = await dispatch(deleteQuestion(questionId));
       
       if (result?.success) {
         toast.success('Question deleted successfully');
-        // Refresh questions
-        await dispatch(getQuestions());
+        // Refresh questions with current filters
+        await fetchQuestionsWithFilters();
       } else {
         toast.error(result?.error || 'Failed to delete question');
       }
@@ -130,16 +147,7 @@ const Questions = () => {
     }
   };
 
-  const filteredQuestions = questions
-    .filter(question => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      const fields = [
-        question.text,
-        question.technology,
-      ].map(v => (v || '').toString().toLowerCase());
-      return fields.some(f => f.includes(q));
-    });
+  const filteredQuestions = questions; // Backend filtering now handles this
 
   
   return (
@@ -162,8 +170,24 @@ const Questions = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by question, technology"
+              placeholder="Search by question"
               className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+            />
+            
+            <CustomDropdown
+              options={technologyOptions}
+              value={selectedTechnologies}
+              onChange={setSelectedTechnologies}
+              multiSelect={true}
+              searchable={true}
+              placeholder={
+                selectedTechnologies.length === 0 
+                  ? "Filter by tech..." 
+                  : selectedTechnologies.length === 1
+                    ? selectedTechnologies[0].label
+                    : `${selectedTechnologies[0].label}, ${selectedTechnologies[1].label}, +${selectedTechnologies.length - 2} more`
+              }
+              className="w-48"
             />
           </div>
         </div>
@@ -178,7 +202,10 @@ const Questions = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '60%' }}>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '5%' }}>
+                    #
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '55%' }}>
                     Question
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '25%' }}>
@@ -193,7 +220,10 @@ const Questions = () => {
                 {filteredQuestions.length > 0 ? (
                   filteredQuestions.map((question, index) => (
                     <tr key={question.id || index} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900" style={{ width: '60%' }}>
+                      <td className="px-4 py-4 text-sm text-gray-600 font-medium" style={{ width: '5%' }}>
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900" style={{ width: '55%' }}>
                         <div style={{ minWidth: '300px', maxWidth: '500px' }}>
                           {editingCell.id === question.id && editingCell.field === 'text' ? (
                             <textarea
@@ -235,23 +265,40 @@ const Questions = () => {
                           <CustomDropdown
                             options={technologyOptions}
                             value={
-                              Array.isArray(question.technology) 
-                                ? question.technology.map(t => 
+                              // Handle different data formats for technology field
+                              (() => {
+                                if (!question.technology) return [];
+                                
+                                // If it's already an array, use it
+                                if (Array.isArray(question.technology)) {
+                                  return question.technology.map(t => 
                                     typeof t === 'string' 
                                       ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
                                       : t
-                                  )
-                                : question.technology 
-                                  ? [typeof question.technology === 'string' 
-                                      ? technologyOptions.find(opt => opt.value === question.technology) || { value: question.technology, label: question.technology }
-                                      : question.technology
-                                    ]
-                                  : []
+                                  );
+                                }
+                                
+                                // If it's a comma-separated string, split it
+                                if (typeof question.technology === 'string') {
+                                  const techArray = question.technology.split(',').map(t => t.trim()).filter(Boolean);
+                                  return techArray.map(t => 
+                                    technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
+                                  );
+                                }
+                                
+                                // If it's a single string (not array), wrap it
+                                if (typeof question.technology === 'string') {
+                                  return [technologyOptions.find(opt => opt.value === question.technology) || { value: question.technology, label: question.technology }];
+                                }
+                                
+                                // Fallback
+                                return [];
+                              })()
                             }
                             onChange={async (selected) => {
                               // Update immediately
                               const payload = {
-                                technology: selected.map(t => t.value)
+                                technology: selected.map(t => t.value).join(',')
                               };
                               
                               // Show saving state
@@ -297,7 +344,7 @@ const Questions = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="3" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
                       No questions found.
                     </td>
                   </tr>

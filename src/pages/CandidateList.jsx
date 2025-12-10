@@ -323,23 +323,40 @@ const CandidateList = () => {
                         <CustomDropdown
                           options={technologyOptions}
                           value={
-                            Array.isArray(candidate.technology) 
-                              ? candidate.technology.map(t => 
+                            // Handle different data formats for technology field
+                            (() => {
+                              if (!candidate.technology) return [];
+                              
+                              // If it's already an array, use it
+                              if (Array.isArray(candidate.technology)) {
+                                return candidate.technology.map(t => 
                                   typeof t === 'string' 
                                     ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
                                     : t
-                                )
-                              : candidate.technology 
-                                ? [typeof candidate.technology === 'string' 
-                                    ? technologyOptions.find(opt => opt.value === candidate.technology) || { value: candidate.technology, label: candidate.technology }
-                                    : candidate.technology
-                                  ]
-                                : []
+                                );
+                              }
+                              
+                              // If it's a comma-separated string, split it
+                              if (typeof candidate.technology === 'string') {
+                                const techArray = candidate.technology.split(',').map(t => t.trim()).filter(Boolean);
+                                return techArray.map(t => 
+                                  technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
+                                );
+                              }
+                              
+                              // If it's a single string (not array), wrap it
+                              if (typeof candidate.technology === 'string') {
+                                return [technologyOptions.find(opt => opt.value === candidate.technology) || { value: candidate.technology, label: candidate.technology }];
+                              }
+                              
+                              // Fallback
+                              return [];
+                            })()
                           }
                           onChange={async (selected) => {
                             // Update immediately
                             const payload = {
-                              technology: selected.map(t => t.value)
+                              technology: selected.map(t => t.value).join(',')
                             };
                             
                             // Show saving state

@@ -418,10 +418,22 @@ export const uploadQuestionsFile = (formData) => {
 };
 
 // Get questions for a candidate or all questions
-export const getQuestions = (candidateId = null) => {
+export const getQuestions = (candidateId = null, searchQuery = '', technologies = []) => {
   return async (dispatch) => {
     try {
-      const url = candidateId ? `${INTERVIEW_API}${candidateId}/` : INTERVIEW_API;
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) {
+        params.append('search', searchQuery.trim());
+      }
+      if (technologies.length > 0) {
+        params.append('technologies', technologies.join(','));
+      }
+      
+      const url = candidateId 
+        ? `${INTERVIEW_API}${candidateId}/?${params.toString()}` 
+        : `${INTERVIEW_API}?${params.toString()}`;
+        
       const response = await axios.get(url, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
