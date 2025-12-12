@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiPlus, FiTrash2, FiEdit2, FiSave, FiXCircle, FiUpload } from 'react-icons/fi';
+import { FiX, FiPlus, FiTrash2, FiEdit2, FiSave, FiXCircle, FiUpload, FiCpu } from 'react-icons/fi';
 import { useDispatch } from 'react-redux';
-import { saveQuestion, getQuestions, updateQuestion, deleteQuestion } from '../reduxServices/actions/InterviewAction';
+import { saveQuestion, getQuestions, updateQuestion, deleteQuestion, saveAiQuestion } from '../reduxServices/actions/InterviewAction';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { INTERVIEW_API } from '../reduxServices/api/InterviewApi';
@@ -49,6 +49,29 @@ const QuestionManagementPopup = ({ editHrDoc, isOpen, onClose, isCompleted = fal
 
   const reindexQuestions = (list) => {
     return list.map((q, i) => ({ ...q, order: i, index: i }));
+  };
+
+  const handleAddAiQuestion = async () => {
+    if (!editHrDoc?.id) {
+      toast.error('Candidate ID is required');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await dispatch(saveAiQuestion(editHrDoc.id, {}));
+      if (result?.success) {
+        toast.success('AI question added successfully');
+        await fetchQuestions(); // Refresh the questions list
+      } else {
+        toast.error(result?.error || 'Failed to add AI question');
+      }
+    } catch (error) {
+      console.error('Error adding AI question:', error);
+      toast.error('Failed to add AI question');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddQuestion = () => {
@@ -245,12 +268,24 @@ const QuestionManagementPopup = ({ editHrDoc, isOpen, onClose, isCompleted = fal
           <h3 className="text-lg font-medium">
             {isCompleted ? 'View Questions' : 'Manage Questions'}
           </h3>
-          <button 
-            onClick={onClose} 
-            className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
-          >
-            <FiX className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-3">
+            {!isCompleted && (
+              <button
+                onClick={handleAddAiQuestion}
+                disabled={loading}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              >
+                <FiCpu className="-ml-0.5 mr-2 h-4 w-4" />
+                Add AI Question
+              </button>
+            )}
+            <button 
+              onClick={onClose} 
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}

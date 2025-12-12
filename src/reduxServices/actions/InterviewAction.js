@@ -1,5 +1,5 @@
 import axios from "axios";
-import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API, PHOTO_API, REGISTER_API, CHAT_API } from "../api/InterviewApi";
+import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API, PHOTO_API, REGISTER_API, CHAT_API, AI_QUETION_API } from "../api/InterviewApi";
 import { InterviewConstant } from "../constant/InterviewConstant";
 
 
@@ -344,6 +344,30 @@ export const saveAnswer = (data) => {
   };
 };
 
+export const saveAiQuestion = (candidateId, data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(`${AI_QUETION_API}${candidateId}/`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          // Authorization: `Bearer ${localStorage.getItem("workload-token")}`,
+        },
+      });
+
+      if (response.data) {
+        console.log("Question added successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error adding Question:", error);
+      return { success: false, error: error.message };
+    }
+  };
+};
+
 export const saveHRDocument = (data) => {
   return async (dispatch) => {
     try {
@@ -646,4 +670,5 @@ export const PdfDataAction = {
   getUserList,
   updateUser,
   ChatApi,
+  saveAiQuestion
 };

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { getQuestions, updateQuestion, deleteQuestion, getEnums } from '../reduxServices/actions/InterviewAction';
 import DeleteConfirmPopup from '../Modal/DeleteConfirmPopup';
+import QuestionAddPopup from '../Modal/QuestionAddPopup';
 import CustomDropdown from '../components/CustomDropdown';
 import { toast } from 'react-toastify';
 
@@ -18,6 +19,7 @@ const Questions = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTechnologies, setSelectedTechnologies] = useState([]);
   const [technologyOptions, setTechnologyOptions] = useState([]);
+  const [showQuestionPopup, setShowQuestionPopup] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -189,6 +191,14 @@ const Questions = () => {
               }
               className="w-48"
             />
+            
+            <button
+              onClick={() => setShowQuestionPopup(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              <FiPlus className="w-4 h-4" />
+              Add Question
+            </button>
           </div>
         </div>
 
@@ -367,6 +377,17 @@ const Questions = () => {
           }}
         />
       )}
+
+      {/* Question Add Popup */}
+      <QuestionAddPopup
+        isOpen={showQuestionPopup}
+        onClose={() => {
+          setShowQuestionPopup(false);
+          // Refresh questions after closing popup
+          fetchQuestionsWithFilters();
+        }}
+        technologyOptions={technologyOptions}
+      />
     </div>
   );
 };

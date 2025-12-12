@@ -17,4 +17,148 @@
     animation: loader 1.5s infinite linear;
     position: absolute;
   }
+
+/* PDF mode - override oklch/oklab colors with rgb/hex equivalents for html2canvas compatibility */
+.pdf-mode {
+  /* Force all CSS custom properties to use safe hex values */
+  --tw-bg-opacity: 1 !important;
+  --tw-border-opacity: 1 !important;
+  --tw-text-opacity: 1 !important;
   
+  /* Override gradient backgrounds */
+  .bg-gradient-to-r,
+  .bg-gradient-to-l,
+  .bg-gradient-to-t,
+  .bg-gradient-to-b,
+  .bg-gradient-to-br,
+  .bg-gradient-to-bl,
+  .bg-gradient-to-tr,
+  .bg-gradient-to-tl {
+    background-image: none !important;
+  }
+  
+  /* Force all elements to use safe colors but preserve layout */
+  * {
+    background: linear-gradient(to bottom, transparent, transparent) !important;
+    background-color: inherit !important;
+    color: inherit !important;
+    border-color: inherit !important;
+  }
+  
+  /* Then override specific color classes */
+  .bg-purple-50 { background-color: #faf5ff !important; background: #faf5ff !important; }
+  .bg-purple-100 { background-color: #f3e8ff !important; background: #f3e8ff !important; }
+  .bg-purple-200 { background-color: #e9d5ff !important; background: #e9d5ff !important; }
+  .bg-purple-300 { background-color: #d8b4fe !important; background: #d8b4fe !important; }
+  .bg-purple-400 { background-color: #c084fc !important; background: #c084fc !important; }
+  .bg-purple-500 { background-color: #a855f7 !important; background: #a855f7 !important; }
+  .bg-purple-600 { background-color: #9333ea !important; background: #9333ea !important; }
+  .bg-purple-700 { background-color: #7c3aed !important; background: #7c3aed !important; }
+  .bg-purple-800 { background-color: #6b21a8 !important; background: #6b21a8 !important; }
+  .bg-purple-900 { background-color: #581c87 !important; background: #581c87 !important; }
+  
+  .bg-orange-50 { background-color: #fff7ed !important; background: #fff7ed !important; }
+  .bg-orange-100 { background-color: #ffedd5 !important; background: #ffedd5 !important; }
+  .bg-orange-200 { background-color: #fed7aa !important; background: #fed7aa !important; }
+  .bg-orange-300 { background-color: #fdba74 !important; background: #fdba74 !important; }
+  .bg-orange-400 { background-color: #fb923c !important; background: #fb923c !important; }
+  .bg-orange-500 { background-color: #f97316 !important; background: #f97316 !important; }
+  .bg-orange-600 { background-color: #ea580c !important; background: #ea580c !important; }
+  .bg-orange-700 { background-color: #c2410c !important; background: #c2410c !important; }
+  .bg-orange-800 { background-color: #9a3412 !important; background: #9a3412 !important; }
+  .bg-orange-900 { background-color: #7c2d12 !important; background: #7c2d12 !important; }
+  
+  .bg-gray-50 { background-color: #f9fafb !important; background: #f9fafb !important; }
+  .bg-gray-100 { background-color: #f3f4f6 !important; background: #f3f4f6 !important; }
+  .bg-gray-200 { background-color: #e5e7eb !important; background: #e5e7eb !important; }
+  .bg-gray-300 { background-color: #d1d5db !important; background: #d1d5db !important; }
+  .bg-gray-400 { background-color: #9ca3af !important; background: #9ca3af !important; }
+  .bg-gray-500 { background-color: #6b7280 !important; background: #6b7280 !important; }
+  .bg-gray-600 { background-color: #4b5563 !important; background: #4b5563 !important; }
+  .bg-gray-700 { background-color: #374151 !important; background: #374151 !important; }
+  .bg-gray-800 { background-color: #1f2937 !important; background: #1f2937 !important; }
+  .bg-gray-900 { background-color: #111827 !important; background: #111827 !important; }
+  
+  .bg-green-50 { background-color: #f0fdf4 !important; background: #f0fdf4 !important; }
+  .bg-green-100 { background-color: #dcfce7 !important; background: #dcfce7 !important; }
+  .bg-green-200 { background-color: #bbf7d0 !important; background: #bbf7d0 !important; }
+  .bg-green-300 { background-color: #86efac !important; background: #86efac !important; }
+  .bg-green-400 { background-color: #4ade80 !important; background: #4ade80 !important; }
+  .bg-green-500 { background-color: #22c55e !important; background: #22c55e !important; }
+  .bg-green-600 { background-color: #16a34a !important; background: #16a34a !important; }
+  .bg-green-700 { background-color: #15803d !important; background: #15803d !important; }
+  .bg-green-800 { background-color: #166534 !important; background: #166534 !important; }
+  .bg-green-900 { background-color: #14532d !important; background: #14532d !important; }
+  
+  .bg-blue-50 { background-color: #eff6ff !important; background: #eff6ff !important; }
+  .bg-blue-100 { background-color: #dbeafe !important; background: #dbeafe !important; }
+  .bg-blue-200 { background-color: #bfdbfe !important; background: #bfdbfe !important; }
+  .bg-blue-300 { background-color: #93c5fd !important; background: #93c5fd !important; }
+  .bg-blue-400 { background-color: #60a5fa !important; background: #60a5fa !important; }
+  .bg-blue-500 { background-color: #3b82f6 !important; background: #3b82f6 !important; }
+  .bg-blue-600 { background-color: #2563eb !important; background: #2563eb !important; }
+  .bg-blue-700 { background-color: #1d4ed8 !important; background: #1d4ed8 !important; }
+  .bg-blue-800 { background-color: #1e40af !important; background: #1e40af !important; }
+  .bg-blue-900 { background-color: #1e3a8a !important; background: #1e3a8a !important; }
+  
+  .bg-white { background-color: #ffffff !important; background: #ffffff !important; }
+  .bg-black { background-color: #000000 !important; background: #000000 !important; }
+  .bg-transparent { background-color: transparent !important; background: transparent !important; }
+  
+  /* Text color overrides - only override specific colors, keep layout intact */
+  .text-purple-600 { color: #9333ea !important; }
+  .text-orange-600 { color: #ea580c !important; }
+  .text-gray-900 { color: #111827 !important; }
+  .text-gray-800 { color: #1f2937 !important; }
+  .text-gray-700 { color: #374151 !important; }
+  .text-gray-600 { color: #4b5563 !important; }
+  .text-gray-500 { color: #6b7280 !important; }
+  .text-gray-400 { color: #9ca3af !important; }
+  .text-gray-300 { color: #d1d5db !important; }
+  .text-gray-200 { color: #e5e7eb !important; }
+  .text-gray-100 { color: #f3f4f6 !important; }
+  .text-gray-50 { color: #f9fafb !important; }
+  .text-white { color: #ffffff !important; }
+  .text-black { color: #000000 !important; }
+  
+  /* Border color overrides */
+  .border-purple-200 { border-color: #e9d5ff !important; }
+  .border-gray-200 { border-color: #e5e7eb !important; }
+  .border-green-400 { border-color: #4ade80 !important; }
+  .border-blue-200 { border-color: #bfdbfe !important; }
+  .border-white { border-color: #ffffff !important; }
+  .border-black { border-color: #000000 !important; }
+  .border-transparent { border-color: transparent !important; }
+  
+  /* Override gradient combination */
+  .from-purple-600.to-purple-700 {
+    background: #9333ea !important;
+  }
+  
+  .from-purple-600 {
+    background-color: #9333ea !important;
+    background: #9333ea !important;
+  }
+  
+  .to-purple-700 {
+    background-color: #7c3aed !important;
+    background: #7c3aed !important;
+  }
+  
+  /* Override opacity classes */
+  .bg-white\/15 { background-color: rgba(255, 255, 255, 0.15) !important; background: rgba(255, 255, 255, 0.15) !important; }
+  .bg-white\/20 { background-color: rgba(255, 255, 255, 0.2) !important; background: rgba(255, 255, 255, 0.2) !important; }
+  .bg-white\/25 { background-color: rgba(255, 255, 255, 0.25) !important; background: rgba(255, 255, 255, 0.25) !important; }
+  .bg-white\/30 { background-color: rgba(255, 255, 255, 0.3) !important; background: rgba(255, 255, 255, 0.3) !important; }
+  .bg-black\/40 { background-color: rgba(0, 0, 0, 0.4) !important; background: rgba(0, 0, 0, 0.4) !important; }
+  .bg-black\/50 { background-color: rgba(0, 0, 0, 0.5) !important; background: rgba(0, 0, 0, 0.5) !important; }
+  
+  /* Override any remaining color functions */
+  [style*="oklch"],
+  [style*="oklab"],
+  [style*="color-mix"] {
+    color: inherit !important;
+    background-color: inherit !important;
+    background: inherit !important;
+  }
+}

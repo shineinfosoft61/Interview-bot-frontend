@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../reduxServices/api/InterviewApi';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 import {
   X,
@@ -380,6 +381,74 @@ const AnswerReportModal = ({ interview, onClose }) => {
     setShowQaPdfModal(false);
   };
 
+  const pdfRef = useRef(null);
+  const downloadPDF = async () => {
+    const element = pdfRef.current;
+    if (!element) {
+      alert('Could not find content to export');
+      return;
+    }
+
+    // Apply safe colors to avoid oklab/oklch crash
+    element.classList.add("pdf-mode");
+    
+    // Temporarily remove max-height and overflow to capture full content
+    const originalStyle = {
+      maxHeight: element.style.maxHeight,
+      overflow: element.style.overflow,
+      height: element.style.height
+    };
+    
+    element.style.maxHeight = 'none';
+    element.style.overflow = 'visible';
+    element.style.height = 'auto';
+
+    // Wait for styles to apply
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        height: element.scrollHeight,
+        windowHeight: element.scrollHeight
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      
+      // Create a custom page size that fits the entire content
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [210, 297] // A4 size as default
+      });
+      
+      // Calculate dimensions to fit content on one page
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Create a custom page height that accommodates the full content
+      const customPageHeight = Math.max(297, imgHeight); // At least A4 height
+      pdf.internal.pageSize.setHeight(customPageHeight);
+      
+      // Add the full image as a single page
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      
+      pdf.save(`interview_report_${interview?.name || 'candidate'}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      // Restore original styles and remove pdf-mode
+      element.style.maxHeight = originalStyle.maxHeight;
+      element.style.overflow = originalStyle.overflow;
+      element.style.height = originalStyle.height;
+      element.classList.remove("pdf-mode");
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
@@ -418,6 +487,12 @@ const AnswerReportModal = ({ interview, onClose }) => {
                   {isLoading ? 'Generating...' : 'View Snapshots ↗'}
                 </button>
               )}
+              <button 
+                onClick={downloadPDF}
+                className="px-3 py-1.5 bg-white/20 text-white text-sm rounded border border-white/30 hover:bg-white/30"
+              >
+                Download PDF
+              </button>
               <button onClick={onClose} className="p-2 text-white hover:bg-white/20 rounded">
                 <X className="w-5 h-5" />
               </button>
@@ -426,7 +501,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+        <div ref={pdfRef} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
 
           {/* Candidate Info Section */}
           <div className="flex items-start justify-between">
