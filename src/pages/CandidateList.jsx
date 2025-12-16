@@ -448,10 +448,10 @@ const CandidateList = () => {
                           }}
                           className={`p-2 rounded-lg transition-colors ${
                             candidate.interview_status === "Completed" 
-                              ? "text-blue-600 hover:bg-blue-50" 
-                              : "text-blue-600 hover:text-blue-900"
+                              ? "text-gray-400 hover:text-gray-600" 
+                              : "text-blue-600 hover:bg-blue-50"
                           }`}
-                          title="Edit Candidate"
+                          title={candidate.interview_status === "Completed" ? "View Candidate Details" : "Edit Candidate"}
                         >
                           <FiEdit2 className="w-4 h-4" />
                         </button>

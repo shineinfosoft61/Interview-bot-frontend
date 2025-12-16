@@ -21,6 +21,9 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc, quickInterview }) => 
   });
   const [saving, setSaving] = useState(false);
   const requirements = useSelector((state) => state.InterviewReducer.requirement || []);
+  
+  // Check if candidate has completed status
+  const isCompleted = editHrDoc?.interview_status === "Completed";
 
   const toDateTimeLocal = (value) => {
     if (!value) return '';
@@ -113,7 +116,14 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc, quickInterview }) => 
         <div className="bg-gray-50 px-6 py-5 md:px-8 text-gray-800 flex items-center justify-between border-b border-gray-200">
           <div className="flex items-center gap-3">
             <FileText className="w-5 h-5 text-gray-600" />
-            <h3 className="text-lg font-semibold">Edit Interview</h3>
+            <h3 className="text-lg font-semibold">
+              {isCompleted ? 'View Candidate Details' : 'Edit Interview'}
+            </h3>
+            {isCompleted && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Interview Completed
+              </span>
+            )}
           </div>
           <button onClick={closeModal} className="p-2 rounded-lg hover:bg-gray-200">
             <X className="w-5 h-5" />
@@ -126,66 +136,148 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc, quickInterview }) => 
           {/* Name and Email */}
           <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1">Name</label>
-            <input name="name" value={formData.name} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {formData.name || 'N/A'}
+              </div>
+            ) : (
+              <input name="name" value={formData.name} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            )}
           </div>
           <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1">Email</label>
-            <input name="email" value={formData.email} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {formData.email || 'N/A'}
+              </div>
+            ) : (
+              <input name="email" value={formData.email} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            )}
           </div>
 
           {/* Phone and Technology */}
           <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1">Phone</label>
-            <input name="phone" value={formData.phone} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {formData.phone || 'N/A'}
+              </div>
+            ) : (
+              <input name="phone" value={formData.phone} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            )}
           </div>
           <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1">Technology</label>
-            <input name="technology" value={formData.technology} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {formData.technology || 'N/A'}
+              </div>
+            ) : (
+              <input name="technology" value={formData.technology} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            )}
           </div>
 
           {/* Links */}
           <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1">Shine Link</label>
-            <input name="shine_link" value={formData.shine_link} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://..." />
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {formData.shine_link || 'N/A'}
+              </div>
+            ) : (
+              <input name="shine_link" value={formData.shine_link} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://..." />
+            )}
           </div>
           <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1">Experience</label>
-            <input name="experience" value={formData.experience} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://meet.google.com/..." />
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {formData.experience || 'N/A'}
+              </div>
+            ) : (
+              <input name="experience" value={formData.experience} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter experience" />
+            )}
           </div>
 
           {/* Date + Time combined */}
           <div className="md:col-span-6">
             <label className="block text-sm text-gray-600 mb-1 flex items-center gap-2"><Clock className="w-4 h-4 text-gray-500" /> Date & Time</label>
-            <input type="datetime-local" name="time" value={formData.time} onChange={handleChange} className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {formData.time ? new Date(formData.time).toLocaleString() : 'No interview scheduled'}
+              </div>
+            ) : (
+              <>
+                {formData.time ? (
+                  <input 
+                    type="datetime-local" 
+                    name="time" 
+                    value={formData.time} 
+                    onChange={handleChange} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    name="time" 
+                    value="" 
+                    onChange={(e) => {
+                      // Convert text input to datetime-local format when user starts typing
+                      const value = e.target.value;
+                      if (value) {
+                        // Trigger datetime-local picker
+                        setFormData(prev => ({ ...prev, time: new Date().toISOString().slice(0, 16) }));
+                      }
+                    }}
+                    onFocus={() => {
+                      // Switch to datetime-local when focused
+                      setFormData(prev => ({ ...prev, time: new Date().toISOString().slice(0, 16) }));
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Schedule candidate interview"
+                  />
+                )}
+              </>
+            )}
           </div>
 
           {/* Requirement Dropdown */}
           <div className="md:col-span-12">
             <label className="block text-sm text-gray-600 mb-1">Requirement</label>
-            <select
-              name="requirement"
-              value={formData.requirement || ''}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Select Requirement</option>
-              {requirements.map((req) => (
-                <option key={req.id} value={req.id}>
-                  {req.name || `Requirement ${req.id}`}
-                </option>
-              ))}
-            </select>
+            {isCompleted ? (
+              <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600">
+                {requirements.find(req => req.id === formData.requirement)?.name || 'N/A'}
+              </div>
+            ) : (
+              <select
+                name="requirement"
+                value={formData.requirement || ''}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Select Requirement</option>
+                {requirements.map((req) => (
+                  <option key={req.id} value={req.id}>
+                    {req.name || `Requirement ${req.id}`}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
         </div>
 
         {/* Footer - Styled to match the image UI */}
         <div className="px-6 py-4 md:px-8 border-t border-gray-100 bg-white flex items-center justify-end gap-3">
-          <button disabled={saving} onClick={closeModal} className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-60">Cancel</button>
-          <button disabled={saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-black shadow-sm disabled:opacity-60">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Saving...' : 'Save Changes'}
+          <button disabled={saving} onClick={closeModal} className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-60">
+            {isCompleted ? 'Close' : 'Cancel'}
           </button>
+          {!isCompleted && (
+            <button disabled={saving} onClick={handleSave} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-black shadow-sm disabled:opacity-60">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          )}
         </div>
       </div>
     </div>
