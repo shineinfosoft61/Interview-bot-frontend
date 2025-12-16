@@ -264,112 +264,6 @@ const AnswerReportModal = ({ interview, onClose }) => {
     setShowPdfModal(false);
   };
 
-  // Generate Q&A PDF for Skill based round
-  const generateQaPdf = async () => {
-    const qaList = Array.isArray(interview.answers) ? interview.answers : [];
-    if (qaList.length === 0) {
-      alert('No Q&A data available for Skill based round.');
-      return;
-    }
-
-    setIsQaLoading(true);
-    try {
-      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-
-      // Title
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(18);
-      doc.text('Skill Based Round - Q&A', 40, 50);
-
-      // Candidate Meta
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(11);
-      const meta = [
-        `Candidate: ${interview?.name || 'N/A'}`,
-        `Email: ${interview?.email || 'N/A'}`,
-        `Technology: ${interview?.technology || 'N/A'}`,
-        `Date: ${lastAnsAt ? lastAnsAt.toLocaleString() : new Date().toLocaleString()}`,
-      ];
-      let y = 70;
-      meta.forEach((m) => {
-        doc.text(m, 40, y);
-        y += 16;
-      });
-
-      y += 10;
-
-      // Content
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 40;
-      const maxWidth = pageWidth - margin * 2;
-      const lineGap = 6;
-
-      qaList.forEach((item, idx) => {
-        // Check page break
-        const startY = y;
-        const qPrefix = `Q${idx + 1}. `;
-        const question = item?.question?.text || '—';
-        const answer = item?.answer_text || '—';
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        const qLines = doc.splitTextToSize(qPrefix + question, maxWidth);
-        const qHeight = qLines.length * (12 + lineGap);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(11);
-        const aLines = doc.splitTextToSize(`- ${answer}`, maxWidth);
-        const aHeight = aLines.length * (11 + lineGap);
-
-        const blockHeight = qHeight + aHeight + 14;
-        const pageHeight = doc.internal.pageSize.getHeight();
-        if (y + blockHeight > pageHeight - margin) {
-          doc.addPage();
-          y = margin;
-        }
-
-        // Draw question
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.text(qLines, margin, y);
-        y += qHeight;
-
-        // Draw answer
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(11);
-        doc.text(aLines, margin, y);
-        y += aHeight + 10;
-
-        // Optional meta per item (rating/correct)
-        const metaLine = [];
-        if (typeof item?.rating === 'number') metaLine.push(`Rating: ${item.rating}`);
-        // if (typeof item?.is_correct === 'boolean') metaLine.push(`Correct: ${item.is_correct ? 'Yes' : 'No'}`);
-        if (metaLine.length) {
-          doc.setFontSize(10);
-          doc.setTextColor(100);
-          doc.text(metaLine.join('   '), margin, y);
-          doc.setTextColor(0);
-          y += 16;
-        }
-
-        // Subtle divider line
-        doc.setDrawColor(230);
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 12;
-      });
-
-      const blob = doc.output('blob');
-      const url = URL.createObjectURL(blob);
-      setQaPdfUrl(url);
-      setShowQaPdfModal(true);
-    } catch (e) {
-      console.error('Error generating Q&A PDF:', e);
-      alert('Failed to generate Q&A PDF. Please try again.');
-    } finally {
-      setIsQaLoading(false);
-    }
-  };
-
   const handleDownloadQaPdf = () => {
     if (!qaPdfUrl) return;
     const link = document.createElement('a');
@@ -435,6 +329,17 @@ const AnswerReportModal = ({ interview, onClose }) => {
       
       // Add the full image as a single page
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+     // Add visible text
+      pdf.setTextColor(0, 0, 255);
+      pdf.setFontSize(12);
+      pdf.text("View Question_Ans", 20, pageHeight - 15);
+
+    // Add REAL clickable link
+      pdf.link(20, pageHeight - 20, 80, 10, {
+      url: `${API_URL}${interview.q_ans_file}`,
+});
       
       pdf.save(`interview_report_${interview?.name || 'candidate'}.pdf`);
     } catch (error) {
@@ -478,14 +383,15 @@ const AnswerReportModal = ({ interview, onClose }) => {
                   View CV ↗
                 </a>
               )}
-              {photos.length > 0 && (
-                <button
-                  onClick={generatePdf}
-                  disabled={isLoading}
-                  className="px-3 py-1.5 bg-white/20 text-white text-sm rounded border border-white/30 hover:bg-white/30 disabled:opacity-50"
+              {interview?.snapshots && (
+                <a
+                  href={`${API_URL}${interview.snapshots}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="sm:inline-flex px-3 py-1.5 rounded-md bg-white/15 text-white text-sm hover:bg-white/25 border border-white/20"
                 >
-                  {isLoading ? 'Generating...' : 'View Snapshots ↗'}
-                </button>
+                  View Snapshots ↗
+                </a>
               )}
               <button 
                 onClick={downloadPDF}
@@ -632,15 +538,17 @@ const AnswerReportModal = ({ interview, onClose }) => {
               </div>
 
               <div className="flex justify-center">
-                <button
-                  type="button"
-                  onClick={generateQaPdf}
-                  disabled={isQaLoading}
+
+                {interview?.q_ans_file && (
+                <a
+                  href={`${API_URL}${interview.q_ans_file}`}
+                  target="_blank"
+                  rel="noreferrer"
                   className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50"
-                  title="View Skill based round Q&A as PDF"
                 >
-                  {isQaLoading ? 'Generating…' : 'View Skill Assessment Report'}
-                </button>
+                  View Question_Ans ↗
+                </a>
+              )}
               </div>
             </div>
 
