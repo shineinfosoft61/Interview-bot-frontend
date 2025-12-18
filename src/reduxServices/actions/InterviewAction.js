@@ -1,5 +1,5 @@
 import axios from "axios";
-import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API, PHOTO_API, REGISTER_API, CHAT_API, AI_QUETION_API } from "../api/InterviewApi";
+import { INTERVIEW_API, CANDIDATE_API, ANSWER_API, HR_API, REQUIREMENT_API, PHOTO_API, REGISTER_API, CHAT_API, AI_QUETION_API, QUETION_BANK_API } from "../api/InterviewApi";
 import { InterviewConstant } from "../constant/InterviewConstant";
 
 
@@ -38,6 +38,10 @@ function UserDetail(data) {
 
 function ChatDetail(data) {
   return { type: InterviewConstant.ALL_CHAT_DATA, data };
+}
+
+function QuestioBankDetail(data) {
+  return { type: InterviewConstant.ALL_QUESTIONBNK_DATA, data };
 }
 
 export const getQuestion = (id) => {
@@ -104,6 +108,21 @@ export const getUserList = () => {
   };
 };
 
+
+export const getQuestionBankList = () => {
+  return async (dispatch) => {
+    try {
+      // Build API URL dynamically
+      const url = `${QUETION_BANK_API}`;
+      const res = await axios.get(url, {
+      });
+
+      dispatch(QuestioBankDetail(res.data));
+    } catch (error) {
+      console.error("Error fetching question access:", error);
+    }
+  };
+};
 // Update existing User
 export const updateUser = (id, data) => {
   return async (dispatch) => {
@@ -416,6 +435,30 @@ export const saveQuestion = (data) => {
   };
 };
 
+export const saveQuestionBank = (data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.post(QUETION_BANK_API, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.data) {
+        console.log("Question added successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error adding question:", error);
+      return { success: false, error: error.response?.data?.details || error.message };
+    }
+  };
+};
+
 // Upload questions via file
 export const uploadQuestionsFile = (formData) => {
   return async (dispatch) => {
@@ -505,11 +548,58 @@ export const updateQuestion = (questionId, data) => {
   };
 };
 
+export const updateQuestionBank = (questionId, data) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.put(`${QUETION_BANK_API}${questionId}/`, data, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.data) {
+        console.log("Question updated successfully", response.data);
+        return { success: true, data: response.data };
+      } else {
+        console.log("No data in the response");
+        return { success: false, error: "No data in response" };
+      }
+    } catch (error) {
+      console.error("Error updating question:", error);
+      return { success: false, error: error.response?.data?.details || error.message };
+    }
+  };
+};
+
 // Delete a specific question
 export const deleteQuestion = (questionId) => {
   return async (dispatch) => {
     try {
       const response = await axios.delete(`${INTERVIEW_API}${questionId}/`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      if (response.status === 204 || response.data) {
+        console.log("Question deleted successfully");
+        return { success: true };
+      } else {
+        console.log("Failed to delete question");
+        return { success: false, error: "Failed to delete question" };
+      }
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      return { success: false, error: error.response?.data?.details || error.message };
+    }
+  };
+};
+
+export const deleteQuestionBank = (questionId) => {
+  return async (dispatch) => {
+    try {
+      const response = await axios.delete(`${QUETION_BANK_API}${questionId}/`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -670,5 +760,9 @@ export const PdfDataAction = {
   getUserList,
   updateUser,
   ChatApi,
-  saveAiQuestion
+  saveAiQuestion,
+  getQuestionBankList,
+  updateQuestionBank,
+  saveQuestionBank,
+  deleteQuestionBank,
 };

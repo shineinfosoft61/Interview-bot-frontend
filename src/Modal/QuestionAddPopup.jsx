@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FiX, FiPlus, FiTrash2 } from 'react-icons/fi';
 import { useDispatch } from 'react-redux';
-import { saveQuestion } from '../reduxServices/actions/InterviewAction';
+import { saveQuestionBank } from '../reduxServices/actions/InterviewAction';
 import { toast } from 'react-toastify';
 import CustomDropdown from '../components/CustomDropdown';
 
@@ -49,7 +49,7 @@ const QuestionAddPopup = ({ isOpen, onClose, technologyOptions }) => {
           technology: selectedTechnology.value
         };
         
-        const result = await dispatch(saveQuestion(payload));
+        const result = await dispatch(saveQuestionBank(payload));
         
         if (!result?.success) {
           throw new Error(result?.error || 'Failed to add question');

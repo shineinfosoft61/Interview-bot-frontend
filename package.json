@@ -22,6 +22,7 @@
     "face-api.js": "^0.20.1",
     "file-saver": "^2.0.5",
     "html2canvas": "^1.4.1",
+    "js-html2pdf": "^1.1.4",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.543.0",
     "react": "^19.1.1",

@@ -12,5 +12,6 @@ export const REGISTER_API = API_URL + "/register/";
 export const CHAT_API = API_URL + "/chat/";
 export const JD_ASSISTANT_API = API_URL + "/jd-assistant/"; 
 export const AI_QUETION_API = API_URL + "/Ai-question/"; 
+export const QUETION_BANK_API = API_URL + "/questions-bank/"; 
 
 

@@ -156,6 +156,7 @@ const CustomDropdown = ({
     
     if (!value || value.length === 0) return placeholder;
     const firstValue = value[0];
+    if (!firstValue) return placeholder;
     if (typeof firstValue === 'string') return firstValue;
     return firstValue.label || firstValue.value || placeholder;
   };

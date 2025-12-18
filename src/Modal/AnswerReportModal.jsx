@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { API_URL } from '../reduxServices/api/InterviewApi';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 
 import {
   X,
@@ -147,6 +145,9 @@ const AnswerReportModal = ({ interview, onClose }) => {
 
     setIsLoading(true);
     try {
+      // Note: This function still uses jsPDF for photo generation
+      // You may want to replace this with js-html2pdf as well if needed
+      const { jsPDF } = await import('jspdf');
       const doc = new jsPDF();
 
       // Add cover page
@@ -283,73 +284,66 @@ const AnswerReportModal = ({ interview, onClose }) => {
       return;
     }
 
+    // Find the body content element
+    const bodyElement = element.querySelector('.p-6.space-y-6');
+    if (!bodyElement) {
+      alert('Could not find body content to export');
+      return;
+    }
+
     // Apply safe colors to avoid oklab/oklch crash
     element.classList.add("pdf-mode");
     
     // Temporarily remove max-height and overflow to capture full content
     const originalStyle = {
-      maxHeight: element.style.maxHeight,
-      overflow: element.style.overflow,
-      height: element.style.height
+      maxHeight: bodyElement.style.maxHeight,
+      overflow: bodyElement.style.overflow,
+      height: bodyElement.style.height
     };
     
-    element.style.maxHeight = 'none';
-    element.style.overflow = 'visible';
-    element.style.height = 'auto';
+    bodyElement.style.maxHeight = 'none';
+    bodyElement.style.overflow = 'visible';
+    bodyElement.style.height = 'auto';
 
     // Wait for styles to apply
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    try {
-      const canvas = await html2canvas(element, {
+    const options = {
+      filename: `interview_report_${interview?.name || 'candidate'}.pdf`,
+      margin: 5,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
-        height: element.scrollHeight,
-        windowHeight: element.scrollHeight
-      });
+        height: bodyElement.scrollHeight,
+        windowHeight: bodyElement.scrollHeight,
+        scrollY: 0,
+        scrollX: 0
+      },
+      pdfOptions: {
+        unit: "mm",
+        format: "a4",
+        orientation: "portrait"
+      },
+      enableLinks: true,
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
 
-      const imgData = canvas.toDataURL("image/png");
+    try {
+      const html2pdfModule = await import('js-html2pdf');
+      const Html2Pdf = html2pdfModule.default || html2pdfModule;
       
-      // Create a custom page size that fits the entire content
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [210, 297] // A4 size as default
-      });
-      
-      // Calculate dimensions to fit content on one page
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // Create a custom page height that accommodates the full content
-      const customPageHeight = Math.max(297, imgHeight); // At least A4 height
-      pdf.internal.pageSize.setHeight(customPageHeight);
-      
-      // Add the full image as a single page
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-     // Add visible text
-      pdf.setTextColor(0, 0, 255);
-      pdf.setFontSize(12);
-      pdf.text("View Question_Ans", 20, pageHeight - 15);
-
-    // Add REAL clickable link
-      pdf.link(20, pageHeight - 20, 80, 10, {
-      url: `${API_URL}${interview.q_ans_file}`,
-});
-      
-      pdf.save(`interview_report_${interview?.name || 'candidate'}.pdf`);
+      const pdf = new Html2Pdf(element, options);
+      pdf.getPdf({ download: true });
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Please try again.');
     } finally {
       // Restore original styles and remove pdf-mode
-      element.style.maxHeight = originalStyle.maxHeight;
-      element.style.overflow = originalStyle.overflow;
-      element.style.height = originalStyle.height;
+      bodyElement.style.maxHeight = originalStyle.maxHeight;
+      bodyElement.style.overflow = originalStyle.overflow;
+      bodyElement.style.height = originalStyle.height;
       element.classList.remove("pdf-mode");
     }
   };
@@ -360,7 +354,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Modal Panel */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-hidden">
+      <div ref={pdfRef} className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 overflow-hidden">
         {/* Header */}
         <div className="relative px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-700">
           <div className="flex items-center justify-between">
@@ -407,7 +401,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
         </div>
 
         {/* Body */}
-        <div ref={pdfRef} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+        <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
 
           {/* Candidate Info Section */}
           <div className="flex items-start justify-between">

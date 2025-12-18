@@ -3,15 +3,14 @@ import { FiArrowLeft, FiEdit2, FiFile, FiX, FiTrash2, FiPlus, FiLoader } from 'r
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { getQuestions, updateQuestion, deleteQuestion, getEnums } from '../reduxServices/actions/InterviewAction';
-import DeleteConfirmPopup from '../Modal/DeleteConfirmPopup';
+import { getQuestions, updateQuestion, deleteQuestionBank, getEnums, updateQuestionBank, getQuestionBankList } from '../reduxServices/actions/InterviewAction';
 import QuestionAddPopup from '../Modal/QuestionAddPopup';
 import CustomDropdown from '../components/CustomDropdown';
 import { toast } from 'react-toastify';
 
 const Questions = () => {
   const dispatch = useDispatch();
-  const questions = useSelector((state) => state.InterviewReducer.questions || []);
+  const questions = useSelector((state) => state.InterviewReducer.questionBank || []);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingQuestion, setDeletingQuestion] = useState(null);
@@ -100,12 +99,12 @@ const Questions = () => {
         };
       }
       
-      const result = await dispatch(updateQuestion(editingCell.id, payload));
+      const result = await dispatch(updateQuestionBank(editingCell.id, payload));
       
       if (result?.success) {
         toast.success('Question updated successfully');
         // Refresh questions
-        await dispatch(getQuestions());
+        await dispatch(getQuestionBankList());
       } else {
         toast.error(result?.error || 'Failed to update question');
       }
@@ -121,7 +120,7 @@ const Questions = () => {
   const fetchQuestionsWithFilters = async () => {
     try {
       const techValues = selectedTechnologies.map(t => t.value);
-      const result = await dispatch(getQuestions(null, searchQuery, techValues));
+      const result = await dispatch(getQuestionBankList(null, searchQuery, techValues));
       if (result?.success) {
         // Questions are already ordered by 'order' field from API
       } else {
@@ -134,7 +133,7 @@ const Questions = () => {
 
   const handleDelete = async (questionId) => {
     try {
-      const result = await dispatch(deleteQuestion(questionId));
+      const result = await dispatch(deleteQuestionBank(questionId));
       
       if (result?.success) {
         toast.success('Question deleted successfully');
@@ -279,26 +278,33 @@ const Questions = () => {
                               (() => {
                                 if (!question.technology) return [];
                                 
-                                // If it's already an array, use it
+                                // If it's already an array, take the first value
                                 if (Array.isArray(question.technology)) {
-                                  return question.technology.map(t => 
-                                    typeof t === 'string' 
-                                      ? technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
-                                      : t
-                                  );
+                                  const firstTech = question.technology[0];
+                                  if (!firstTech) return [];
+                                  
+                                  if (typeof firstTech === 'string') {
+                                    const foundOption = technologyOptions.find(opt => opt.value === firstTech);
+                                    return foundOption ? [foundOption] : [{ value: firstTech, label: firstTech }];
+                                  }
+                                  return [firstTech];
                                 }
                                 
-                                // If it's a comma-separated string, split it
+                                // Handle string technology (could be single or comma-separated)
                                 if (typeof question.technology === 'string') {
-                                  const techArray = question.technology.split(',').map(t => t.trim()).filter(Boolean);
-                                  return techArray.map(t => 
-                                    technologyOptions.find(opt => opt.value === t) || { value: t, label: t }
-                                  );
-                                }
-                                
-                                // If it's a single string (not array), wrap it
-                                if (typeof question.technology === 'string') {
-                                  return [technologyOptions.find(opt => opt.value === question.technology) || { value: question.technology, label: question.technology }];
+                                  // Check if it contains commas (multiple technologies)
+                                  if (question.technology.includes(',')) {
+                                    const techArray = question.technology.split(',').map(t => t.trim()).filter(Boolean);
+                                    const firstTech = techArray[0];
+                                    if (!firstTech) return [];
+                                    
+                                    const foundOption = technologyOptions.find(opt => opt.value === firstTech);
+                                    return foundOption ? [foundOption] : [{ value: firstTech, label: firstTech }];
+                                  } else {
+                                    // Single technology string
+                                    const foundOption = technologyOptions.find(opt => opt.value === question.technology);
+                                    return foundOption ? [foundOption] : [{ value: question.technology, label: question.technology }];
+                                  }
                                 }
                                 
                                 // Fallback
@@ -306,19 +312,20 @@ const Questions = () => {
                               })()
                             }
                             onChange={async (selected) => {
-                              // Update immediately
+                              // Update immediately with single technology
+                              const selectedTech = selected && selected.length > 0 ? selected[0] : null;
                               const payload = {
-                                technology: selected.map(t => t.value).join(',')
+                                technology: selectedTech ? selectedTech.value : ''
                               };
                               
                               // Show saving state
                               setEditingCell({ id: question.id, field: 'technology', value: selected, saving: true });
                               
                               try {
-                                const result = await dispatch(updateQuestion(question.id, payload));
+                                const result = await dispatch(updateQuestionBank(question.id, payload));
                                 if (result?.success) {
                                   toast.success('Technology updated successfully');
-                                  await dispatch(getQuestions());
+                                  await dispatch(getQuestionBankList());
                                 } else {
                                   toast.error(result?.error || 'Failed to update technology');
                                 }
@@ -329,9 +336,9 @@ const Questions = () => {
                                 setEditingCell({ id: null, field: null, value: '', saving: false });
                               }
                             }}
-                            multiSelect={true}
+                            multiSelect={false}
                             searchable={true}
-                            placeholder="Select technologies..."
+                            placeholder="Select technology..."
                             className="w-full"
                           />
                           {editingCell.saving && editingCell.id === question.id && (
@@ -342,7 +349,7 @@ const Questions = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium sticky right-0 bg-white z-10 border-l border-gray-200" style={{ width: '15%' }}>
                         <div className="flex items-center gap-2 justify-end" style={{ minWidth: '80px' }}>
                           <button
-                            onClick={() => setDeletingQuestion(question)}
+                            onClick={() => handleDelete(question.id)}
                             className="p-2 rounded-lg hover:bg-red-50 transition-colors group"
                             title="Delete question"
                           >
@@ -365,18 +372,6 @@ const Questions = () => {
         )}
       </div>
 
-      {/* Delete Confirmation Popup */}
-      {deletingQuestion && (
-        <DeleteConfirmPopup
-          itemName={deletingQuestion.text || 'this question'}
-          isOpen={!!deletingQuestion}
-          onClose={() => setDeletingQuestion(null)}
-          onConfirm={async () => {
-            await handleDelete(deletingQuestion.id);
-            setDeletingQuestion(null);
-          }}
-        />
-      )}
 
       {/* Question Add Popup */}
       <QuestionAddPopup
