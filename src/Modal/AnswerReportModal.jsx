@@ -294,6 +294,14 @@ const AnswerReportModal = ({ interview, onClose }) => {
     // Apply safe colors to avoid oklab/oklch crash
     element.classList.add("pdf-mode");
     
+    // Hide buttons during PDF generation
+    const buttonsToHide = element.querySelectorAll('button');
+    const originalButtonDisplay = [];
+    buttonsToHide.forEach((button, index) => {
+      originalButtonDisplay[index] = button.style.display;
+      button.style.display = 'none';
+    });
+    
     // Temporarily remove max-height and overflow to capture full content
     const originalStyle = {
       maxHeight: bodyElement.style.maxHeight,
@@ -344,6 +352,12 @@ const AnswerReportModal = ({ interview, onClose }) => {
       bodyElement.style.maxHeight = originalStyle.maxHeight;
       bodyElement.style.overflow = originalStyle.overflow;
       bodyElement.style.height = originalStyle.height;
+      
+      // Restore button visibility
+      buttonsToHide.forEach((button, index) => {
+        button.style.display = originalButtonDisplay[index];
+      });
+      
       element.classList.remove("pdf-mode");
     }
   };
@@ -426,7 +440,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-1">{interview?.name}</h2>
-                <p className="text-sm text-gray-600 mb-1">{`${interview?.technology} Developer`}</p>
+                <p className="text-sm text-gray-600 mb-1">{`${interview?.technology ? interview.technology.replace(/,/g, ' - ') : 'Not specified'} Developer`}</p>
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <Mail className="w-4 h-4" />
                   <span>{interview?.email}</span>
@@ -470,7 +484,7 @@ const AnswerReportModal = ({ interview, onClose }) => {
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1">Current role</div>
-              <div className="text-lg font-semibold">{interview?.technology || 'Not specified'}</div>
+              <div className="text-lg font-semibold">{interview?.technology ? interview.technology.replace(/,/g, ' - ') : 'Not specified'}</div>
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500 mb-1">Current company</div>

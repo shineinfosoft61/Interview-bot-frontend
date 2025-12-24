@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiArrowLeft, FiFilter, FiClock, FiCheckCircle, FiXCircle, FiEdit2, FiPlus, FiFile, FiHelpCircle, FiLoader } from 'react-icons/fi';
+import { FiArrowLeft, FiFilter, FiClock, FiCheckCircle, FiCalendar, FiEdit2, FiPlus, FiFile, FiHelpCircle, FiLoader } from 'react-icons/fi';
 import { FileText, X } from 'lucide-react';
 import HrDocPopup from '../Modal/HrDocPopup';
 import { format } from 'date-fns';
@@ -206,13 +206,13 @@ const CandidateList = () => {
             <FiCheckCircle className="mr-1" /> Completed
           </span>
         );
-      case 'Rejected':
+      case 'Scheduled':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            <FiXCircle className="mr-1" /> Rejected
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <FiCalendar className="mr-1" /> Scheduled
           </span>
         );
-      default:
+      default:  
         return status;
     }
   };

@@ -183,7 +183,7 @@ export const updateHRDocument = (id, data) => {
       }
     } catch (error) {
       console.error("Error updating HR Document:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.response?.data?.error || error.message };
     }
   };
 };

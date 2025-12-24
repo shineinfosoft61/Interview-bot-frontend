@@ -93,13 +93,14 @@ const HrDocPopup = ({ editHrDoc, closeModal, setEditHrDoc, quickInterview }) => 
         is_quick : formData.is_quick
       };
       const res = await dispatch(updateHRDocument(editHrDoc.id, payload));
+      console.log('----------------res',res)
       if (res?.success) {
         toast.success('Interview updated successfully');
         closeModal();
         setEditHrDoc(null);
         dispatch(getHrDocument());
       } else {
-        toast.error(res?.error || 'Failed to update interview');
+        toast.error(res?.error || res?.data?.error || 'Failed to update interview');
       }
     } catch (e) {
       toast.error('Failed to update interview');
