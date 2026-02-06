@@ -109,17 +109,34 @@ export const getUserList = () => {
 };
 
 
-export const getQuestionBankList = () => {
+export const getQuestionBankList = (candidateId = null, searchQuery = '', technologies = []) => {
   return async (dispatch) => {
     try {
-      // Build API URL dynamically
-      const url = `${QUETION_BANK_API}`;
-      const res = await axios.get(url, {
-      });
-
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      if (searchQuery) {
+        params.append('search', searchQuery);
+      }
+      
+      if (technologies && technologies.length > 0) {
+        // Join technologies with comma as per backend API
+        params.append('technologies', technologies.join(','));
+      }
+      
+      // Build API URL with query parameters
+      let url = QUETION_BANK_API;
+      const queryString = params.toString();
+      if (queryString) {
+        url += `?${queryString}`;
+      }
+      
+      const res = await axios.get(url);
       dispatch(QuestioBankDetail(res.data));
+      return { success: true, data: res.data };
     } catch (error) {
-      console.error("Error fetching question access:", error);
+      console.error("Error fetching questions:", error);
+      return { success: false, error: error.message };
     }
   };
 };

@@ -119,15 +119,22 @@ const Questions = () => {
 
   const fetchQuestionsWithFilters = async () => {
     try {
+      setIsLoading(true);
       const techValues = selectedTechnologies.map(t => t.value);
       const result = await dispatch(getQuestionBankList(null, searchQuery, techValues));
+      
       if (result?.success) {
         // Questions are already ordered by 'order' field from API
       } else {
-        console.error('Failed to fetch questions:', result?.error);
+        setError(result?.error || 'Failed to fetch questions');
+        toast.error(result?.error || 'Failed to fetch questions');
       }
-    } catch (err) {
-      console.error('Error fetching questions:', err);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      setError('Failed to fetch questions. Please try again.');
+      toast.error('Failed to fetch questions. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
